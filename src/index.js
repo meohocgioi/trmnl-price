@@ -48,6 +48,21 @@ export default {
     }
 
     // Kiểm tra nhanh (chỉ bật khi có biến DEBUG_KEY — bản deploy bình thường không có)
+    if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('bn')) {
+      const out = {};
+      const tests = {
+        agentAdList: 'https://www.binance.com/bapi/c2c/v1/public/c2c/agent/ad-list?fiat=VND&asset=USDT&tradeType=SELL&page=1&rows=5',
+        agentQuote: 'https://www.binance.com/bapi/c2c/v1/public/c2c/agent/quote-price?fiat=VND&asset=USDT&tradeType=SELL',
+        sapiAds: 'https://api.binance.com/sapi/v1/c2c/agent/ads/search',
+        spotPing: 'https://api.binance.com/api/v3/ping',
+        visionPing: 'https://data-api.binance.vision/api/v3/ping',
+      };
+      for (const [k, u] of Object.entries(tests)) {
+        try { const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0' } }); out[k] = r.status + ' ' + (await r.text()).slice(0, 220).replace(/\s+/g, ' '); }
+        catch (e) { out[k] = 'ERR ' + e.message; }
+      }
+      return json(out);
+    }
     if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('px')) {
       const { socksFetch, getProxies, proxyId } = await import('./socks.js');
       const out = {};
