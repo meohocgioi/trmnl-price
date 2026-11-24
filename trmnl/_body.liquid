@@ -20,6 +20,23 @@
             <div class="msg">Chưa lấy được giá P2P<small>{{ p2p.error }}</small></div>
           {% endif %}
         </div>
+        {% if p2p.cmp_count > 0 %}
+        <div class="cmp x-cmp">
+          {% for c in p2p.cmp %}<span class="ci"><b>{{ c.name }}</b> {{ c.price }}{% if c.diff != "" %} <i>{{ c.diff }}</i>{% endif %}{% if c.note != "" %} <i>{{ c.note }}</i>{% endif %}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% if p2p.chart.show %}
+        <div class="ch x-chart">
+          {% if p2p.chart.has %}
+          <div class="ch-l"><span>{{ p2p.chart.max }}</span><span>{{ p2p.chart.min }}</span></div>
+          <svg viewBox="0 0 300 60" preserveAspectRatio="none" class="ch-s">
+            {% for t in p2p.chart.ticks %}<line x1="{{ t }}" y1="0" x2="{{ t }}" y2="60" stroke="#999" stroke-width="0.6" stroke-dasharray="2,2" vector-effect="non-scaling-stroke"/>{% endfor %}
+            <polyline points="{{ p2p.chart.points }}" fill="none" stroke="#000" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="ch-r">{% if p2p.chart.partial %}{{ p2p.chart.days }}/7 ngày{% else %}7 ngày{% endif %}<b>{{ p2p.chart.change }}</b></div>
+          {% else %}<div class="ch-n">{{ p2p.chart.note }}</div>{% endif %}
+        </div>
+        {% endif %}
       </div>
 
       <div class="bx blk">

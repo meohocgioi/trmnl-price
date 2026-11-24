@@ -9,6 +9,8 @@ const vnHour = (ms) => new Date(ms + 7 * 3600000).getUTCHours() + new Date(ms).g
 // every: chu kỳ làm mới (ms). heavy: dùng Browser Rendering (tốn giờ trình duyệt → thưa hơn ban đêm)
 export const SOURCES = {
   p2p:    { every: 5 * MIN,  label: 'Binance P2P', run: (env, s) => S.p2p(env, { side: s.p2pSide, minLimit: s.p2pMin }) },
+  bybit:  { every: 5 * MIN,  label: 'Bybit P2P', run: (env, s) => S.bybit({ minLimit: s.p2pMin }) },
+  okx:    { every: 5 * MIN,  label: 'OKX P2P', run: (env, s) => S.okx({ minLimit: s.p2pMin }) },
   black:  { every: 15 * MIN, label: 'USD chợ đen', run: () => S.blackUsd() },
   sjc:    { every: 15 * MIN, label: 'Vàng SJC', run: () => S.sjc() },
   phuquy: { every: 30 * MIN, label: 'Bạc Phú Quý', run: () => S.phuquy() },
@@ -20,9 +22,26 @@ export const SOURCES = {
 
 const key = (k) => 'src:' + k;
 
+// Lịch sử giá Binance P2P cho biểu đồ 1 tuần: 1 điểm / 15 phút, giữ 8 ngày. Điểm: [thời gian, giá Bán, giá Mua]
+export const HIST_STEP = 15 * MIN;
+export async function appendHist(env, d) {
+  if (d?.sellTop == null && d?.buyTop == null) return;
+  const h = (await env.KV.get('hist:binance', 'json')) || [];
+  const now = Date.now();
+  const last = h[h.length - 1];
+  if (last && now - last[0] < HIST_STEP - 60000) {
+    // cùng khung 15 phút → cập nhật điểm cuối
+    last[1] = d.sellTop ?? last[1]; last[2] = d.buyTop ?? last[2];
+  } else h.push([now, d.sellTop ?? null, d.buyTop ?? null]);
+  const cut = now - 8 * 24 * 60 * MIN;
+  await env.KV.put('hist:binance', JSON.stringify(h.filter((p) => p[0] >= cut)));
+}
+export async function readHist(env) { return (await env.KV.get('hist:binance', 'json')) || []; }
+
 export async function readAll(env) {
   const out = {};
   await Promise.all(Object.keys(SOURCES).map(async (k) => { out[k] = (await env.KV.get(key(k), 'json')) || null; }));
+  out._hist = await readHist(env);
   return out;
 }
 
@@ -62,6 +81,7 @@ export async function refresh(env, opts = {}) {
       await env.KV.put(key(k), JSON.stringify(next));
       cur[k] = next;
       result[k] = 'ok';
+      if (k === 'p2p') { await appendHist(env, data).catch((e) => console.error('hist', e)); cur._hist = await readHist(env); }
     } catch (e) {
       const msg = String(e?.message || e).slice(0, 200);
       // P2P đổi tham số mà lỗi → bỏ số liệu cũ (không đúng loại nữa)

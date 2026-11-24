@@ -47,11 +47,19 @@
   .stale{font-size:10px;font-weight:900;border:1px solid #fff;border-radius:3px;padding:0 3px;}
   .pb-warn{flex:none;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid #000;padding-top:2px;}
   .pb .S{display:none;}
+  .cmp{flex:none;display:flex;gap:14px;padding:2px 10px;border-top:1px solid #000;font-size:12px;white-space:nowrap;overflow:hidden;}
+  .cmp .ci b{font-weight:800;}.cmp .ci i{font-style:normal;font-weight:700;font-size:11px;}
+  .ch{flex:none;display:flex;align-items:stretch;gap:6px;height:64px;padding:3px 10px 4px;border-top:1px solid #000;}
+  .ch-l{flex:none;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;font-weight:700;text-align:right;}
+  .ch-s{flex:1;min-width:0;height:100%;}
+  .ch-r{flex:none;display:flex;flex-direction:column;justify-content:space-between;font-size:10px;font-weight:700;text-align:right;}
+  .ch-r b{font-size:12px;font-weight:900;}
+  .ch-n{flex:1;display:flex;align-items:center;font-size:11px;font-style:italic;}
 
   /* ===== Nửa ngang (800×240): P2P + USD | Vàng + bạc + thế giới ===== */
   .sz-hh .pb{padding:6px 10px;gap:5px;--gap:6px;--fs:16px;}
   .sz-hh .pb-hd{height:20px;}.sz-hh .pb-hd .t{font-size:15px;}.sz-hh .pb-hd .chip{font-size:10px;padding:0 6px;}.sz-hh .pb-hd .u{font-size:11px;}
-  .sz-hh .x-fx,.sz-hh .x-fu,.sz-hh .x-ring,.sz-hh .pb-warn,.sz-hh .x-lim{display:none;}
+  .sz-hh .x-fx,.sz-hh .x-fu,.sz-hh .x-ring,.sz-hh .pb-warn,.sz-hh .x-lim,.sz-hh .x-chart{display:none;}.sz-hh .cmp{font-size:10px;padding:0 8px;}
   .sz-hh .bx{border-width:2px;border-radius:7px;}.sz-hh .bx-t{padding:1px 8px;font-size:11px;}
   .sz-hh .bx-b{padding:1px 8px;}.sz-hh .r .n{font-size:12px;}.sz-hh .r .p2{font-size:18px;}
   .sz-hh .r .rk{width:16px;height:16px;font-size:10px;}
@@ -61,7 +69,7 @@
   .sz-hv .pb{padding:8px 10px;gap:6px;--gap:6px;--fs:16px;}
   .sz-hv .pb-main{flex-direction:column;}
   .sz-hv .pb-hd{height:22px;}.sz-hv .pb-hd .t{font-size:16px;}.sz-hv .pb-hd .chip{display:none;}.sz-hv .pb-hd .u{font-size:11px;}
-  .sz-hv .x-fx,.sz-hv .x-ring,.sz-hv .x-lim,.sz-hv .x-e5{display:none;}
+  .sz-hv .x-fx,.sz-hv .x-ring,.sz-hv .x-lim,.sz-hv .x-e5{display:none;}.sz-hv .cmp{font-size:10px;padding:1px 8px;}.sz-hv .ch{height:46px;padding:2px 8px;}
   .sz-hv .bx{border-width:2px;border-radius:8px;}.sz-hv .bx-t{padding:1px 8px;font-size:11px;}
   .sz-hv .bx-b{padding:1px 8px;}.sz-hv .r .n{font-size:12px;}.sz-hv .r .p2{font-size:18px;}
   .sz-hv .r .rk{width:16px;height:16px;font-size:10px;}
@@ -73,7 +81,7 @@
   .sz-q .pb{padding:5px 7px;gap:4px;--gap:4px;--fs:14px;}
   .sz-q .pb-main{flex-direction:column;}
   .sz-q .pb-hd{height:16px;}.sz-q .pb-hd .t{font-size:12px;}.sz-q .pb-hd .chip,.sz-q .pb-hd .u{display:none;}
-  .sz-q .x-fx,.sz-q .x-ring,.sz-q .x-lim,.sz-q .x-silver,.sz-q .x-world,.sz-q .x-fu,.sz-q .pb-warn{display:none;}
+  .sz-q .x-fx,.sz-q .x-ring,.sz-q .x-lim,.sz-q .x-silver,.sz-q .x-world,.sz-q .x-fu,.sz-q .pb-warn,.sz-q .x-chart,.sz-q .x-cmp{display:none;}
   .sz-q .bx{border-width:2px;border-radius:6px;}.sz-q .bx-t{padding:0 6px;font-size:10px;}
   .sz-q .bx-b{padding:0 6px;}.sz-q .r .n{font-size:11px;}.sz-q .r .p2{font-size:15px;}
   .sz-q .r .rk{width:14px;height:14px;font-size:9px;}
@@ -102,6 +110,23 @@
             <div class="msg">Chưa lấy được giá P2P<small>{{ p2p.error }}</small></div>
           {% endif %}
         </div>
+        {% if p2p.cmp_count > 0 %}
+        <div class="cmp x-cmp">
+          {% for c in p2p.cmp %}<span class="ci"><b>{{ c.name }}</b> {{ c.price }}{% if c.diff != "" %} <i>{{ c.diff }}</i>{% endif %}{% if c.note != "" %} <i>{{ c.note }}</i>{% endif %}</span>{% endfor %}
+        </div>
+        {% endif %}
+        {% if p2p.chart.show %}
+        <div class="ch x-chart">
+          {% if p2p.chart.has %}
+          <div class="ch-l"><span>{{ p2p.chart.max }}</span><span>{{ p2p.chart.min }}</span></div>
+          <svg viewBox="0 0 300 60" preserveAspectRatio="none" class="ch-s">
+            {% for t in p2p.chart.ticks %}<line x1="{{ t }}" y1="0" x2="{{ t }}" y2="60" stroke="#999" stroke-width="0.6" stroke-dasharray="2,2" vector-effect="non-scaling-stroke"/>{% endfor %}
+            <polyline points="{{ p2p.chart.points }}" fill="none" stroke="#000" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="ch-r">{% if p2p.chart.partial %}{{ p2p.chart.days }}/7 ngày{% else %}7 ngày{% endif %}<b>{{ p2p.chart.change }}</b></div>
+          {% else %}<div class="ch-n">{{ p2p.chart.note }}</div>{% endif %}
+        </div>
+        {% endif %}
       </div>
 
       <div class="bx blk">
