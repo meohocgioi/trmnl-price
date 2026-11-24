@@ -22,7 +22,11 @@ class Reader {
   }
   async take(n) { await this.fill(n); const out = this.buf.slice(0, n); this.buf = this.buf.slice(n); return out; }
   // như take nhưng trả undefined khi hết dữ liệu (cho subtls)
-  async takeOrEnd(n) { try { return await this.take(n); } catch { return undefined; } }
+  // mode 1 = PEEK: xem trước, không lấy ra khỏi bộ đệm
+  async takeOrEnd(n, mode = 0) {
+    try { if (mode === 1) { await this.fill(n); return this.buf.slice(0, n); } return await this.take(n); }
+    catch { return undefined; }
+  }
   release() { this.r.releaseLock(); }
 }
 
@@ -72,7 +76,7 @@ async function doFetch(proxy, url, { method, headers, body }) {
     let raw;
     if (u.protocol === 'https:') {
       rootsDb ??= await TrustedCert.databaseFromPEM(ROOTS);
-      const tls = await startTls(u.hostname, rootsDb, (n) => rd.takeOrEnd(n), (d) => w.write(d));
+      const tls = await startTls(u.hostname, rootsDb, (n, mode) => rd.takeOrEnd(n, mode), (d) => w.write(d));
       await tls.write(reqBytes);
       const parts = [];
       for (;;) {
