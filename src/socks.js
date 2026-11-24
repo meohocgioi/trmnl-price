@@ -71,11 +71,28 @@ async function doFetch(proxy, url, { method, headers, body }) {
     tw.releaseLock();
 
     // 4. Đọc hết phản hồi (máy chủ đóng kết nối vì Connection: close)
-    const raw = new Uint8Array(await new Response(tls.readable).arrayBuffer());
+    const raw = await readAll(tls.readable);
     return parseHttp(raw);
   } finally {
     sock.close().catch(() => {});
   }
+}
+
+async function readAll(readable) {
+  const r = readable.getReader();
+  const parts = []; let n = 0;
+  try {
+    for (;;) {
+      const { value, done } = await r.read();
+      if (done) break;
+      parts.push(value); n += value.length;
+    }
+  } catch (e) {
+    if (!n) throw new Error('Lỗi đọc dữ liệu: ' + (e?.message || e));
+  }
+  const out = new Uint8Array(n); let o = 0;
+  for (const x of parts) { out.set(x, o); o += x.length; }
+  return out;
 }
 
 function parseHttp(raw) {
