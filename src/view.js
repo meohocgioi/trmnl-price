@@ -119,6 +119,7 @@ export function buildView(all, s, now = Date.now()) {
 
 function shortErr(e) {
   if (!e) return 'Đang lấy dữ liệu…';
+  if (/proxy/i.test(e)) return 'Proxy lỗi — gửi proxy mới bằng /proxy';
   if (/HTTP 403|HTTP 451/.test(e)) return 'Nguồn chặn máy chủ';
   return e.length > 60 ? e.slice(0, 57) + '…' : e;
 }

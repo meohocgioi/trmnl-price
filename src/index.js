@@ -1,7 +1,7 @@
 import { refresh, readAll } from './store.js';
 import { buildView } from './view.js';
 import { getSettings } from './settings.js';
-import { handleTelegram, setupWebhook } from './telegram.js';
+import { handleTelegram, setupWebhook, sendMsg, ownerId } from './telegram.js';
 import { autoUpdate } from './updater.js';
 
 const json = (o, status = 200) =>
@@ -16,6 +16,17 @@ async function autoConnect(env) {
   const origin = (await env.KV.get('origin')) || 'https://trmnl-price.meohocgioi.workers.dev';
   const r = await setupWebhook(env, origin, { welcome: true });
   if (r.ok) await env.KV.put('tg:ready', env.TELEGRAM_BOT_TOKEN.split(':')[0]);
+}
+
+// Báo qua Telegram khi mọi proxy SOCKS5 đều lỗi (tối đa 1 lần / 6 giờ)
+async function proxyAlert(env, res) {
+  if (!res) return;
+  if (res === 'ok') { await env.KV.delete('alert:proxy'); return; }
+  if (!/proxy/i.test(res) || (await env.KV.get('alert:proxy'))) return;
+  const owner = await ownerId(env);
+  if (!owner || !env.TELEGRAM_BOT_TOKEN) return;
+  await sendMsg(env, owner, '🧦 <b>Proxy cho Binance P2P đang lỗi</b> — TRMNL không có giá P2P.\nGửi proxy mới: <code>/proxy link-t.me/socks</code>\n\n<i>' + res.replace(/^ERR /, '').replace(/</g, '&lt;').slice(0, 400) + '</i>', [[{ text: '🧦 Xem proxy', callback_data: 'proxy' }]]);
+  await env.KV.put('alert:proxy', '1', { expirationTtl: 6 * 3600 });
 }
 
 export async function screen(env) {
@@ -61,6 +72,7 @@ export default {
       const r = await refresh(env);
       await env.KV.put('lastRefresh', String(Date.now()));
       if (Object.keys(r.result).length) console.log('refresh', JSON.stringify(r.result));
+      await proxyAlert(env, r.result.p2p);
     })().catch((e) => console.error('refresh', e)));
     ctx.waitUntil(autoConnect(env).catch((e) => console.error('autoConnect', e)));
     ctx.waitUntil(autoUpdate(env).catch((e) => console.error('autoUpdate', e)));

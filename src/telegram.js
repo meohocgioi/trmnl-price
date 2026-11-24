@@ -6,6 +6,7 @@ import { checkUpdate } from './updater.js';
 import { trmnlPreview } from './trmnl.js';
 import { esc, stamp } from './util.js';
 import { short } from './view.js';
+import { parseProxy, getProxies, saveProxies, proxyId } from './socks.js';
 
 const API = (env, m) => `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${m}`;
 
@@ -57,6 +58,7 @@ const COMMANDS = [
   { command: 'gia', description: '💰 Bảng giá hiện tại' },
   { command: 'preview', description: '🖼 Xem trước màn hình TRMNL' },
   { command: 'setting', description: '⚙️ Mua/Bán P2P, hạn mức, 1 hay 10 lượng' },
+  { command: 'proxy', description: '🧦 Proxy SOCKS5 cho Binance P2P: xem / thêm / xoá' },
   { command: 'trmnl', description: '🔗 Polling URL cho TRMNL' },
   { command: 'update', description: '🔄 Cập nhật ngay: giá + code mới nhất' },
   { command: 'version', description: '🏷 Phiên bản đang chạy' },
@@ -157,7 +159,7 @@ function settingsView(s, note = '') {
     [{ text: `${tick(s.p2pSide === 'SELL')}Giá BÁN USDT`, callback_data: 'set:p2pSide:SELL' }, { text: `${tick(s.p2pSide === 'BUY')}Giá MUA USDT`, callback_data: 'set:p2pSide:BUY' }],
     P2P_MINS.map((m) => ({ text: `${tick(s.p2pMin === m)}> ${short(m)}`, callback_data: `set:p2pMin:${m}` })),
     [{ text: `${tick(s.unit === 1)}1 lượng`, callback_data: 'set:unit:1' }, { text: `${tick(s.unit === 10)}10 lượng`, callback_data: 'set:unit:10' }],
-    [{ text: `${s.showE5 ? '☑️' : '⬜'} Hiện thêm xăng E5`, callback_data: 'set:showE5:toggle' }],
+    [{ text: `${s.showE5 ? '☑️' : '⬜'} Hiện thêm xăng E5`, callback_data: 'set:showE5:toggle' }, { text: '🧦 Proxy P2P', callback_data: 'proxy' }],
     [{ text: '🖼 Xem trước TRMNL', callback_data: 'preview' }, { text: '💰 Bảng giá', callback_data: 'gia' }],
   ];
   return { text, kb };
@@ -169,6 +171,7 @@ const HELP =
   `/preview – xem trước màn hình TRMNL (đúng như lần refresh tới)\n` +
   `/preview all – xem cả 4 cỡ (full, nửa ngang, nửa dọc, 1/4)\n` +
   `/setting – giá Mua/Bán USDT, hạn mức P2P, giá vàng/bạc 1 hay 10 lượng\n` +
+  `/proxy – xem proxy SOCKS5 dùng cho Binance P2P; <code>/proxy link</code> để thêm proxy mới (dán thẳng link t.me/socks cũng được)\n` +
   `/trmnl – Polling URL để cài plugin trên TRMNL\n` +
   `/update – lấy lại giá ngay + cập nhật code mới nhất\n` +
   `/version – phiên bản đang chạy\n\n` +
@@ -215,6 +218,47 @@ async function doPreview(env, chatId, all) {
   }
 }
 
+// ---------- Proxy SOCKS5 ----------
+const ago = (ms) => { const m = Math.round((Date.now() - ms) / 60000); return m < 60 ? `${m} phút trước` : m < 1440 ? `${Math.round(m / 60)} giờ trước` : `${Math.round(m / 1440)} ngày trước`; };
+
+async function proxyView(env, note = '') {
+  const list = await getProxies(env);
+  const L = ['<b>🧦 Proxy SOCKS5 cho Binance P2P</b>', '<i>Binance chặn máy chủ Cloudflare nên giá P2P lấy qua proxy. Bot thử lần lượt, proxy nào chạy được thì dùng.</i>', ''];
+  if (!list.length) L.push('Chưa có proxy nào.');
+  list.forEach((p, i) => {
+    const st = p.err && (!p.okAt || p.errAt > p.okAt) ? `❌ lỗi ${p.errAt ? ago(p.errAt) : ''}: <i>${esc(p.err)}</i>` : p.okAt ? `✅ chạy tốt · ${ago(p.okAt)}` : '⏳ chưa thử';
+    L.push(`${i + 1}. <code>${esc(proxyId(p))}</code>${p.user ? ` · user <code>${esc(p.user.slice(0, 4))}…</code>` : ''}\n    ${st}`);
+  });
+  L.push('', '➕ <b>Thêm proxy:</b> gửi <code>/proxy</code> + link, ví dụ\n<code>/proxy https://t.me/socks?server=1.2.3.4&amp;port=1080&amp;user=abc&amp;pass=xyz</code>\n(hoặc dán thẳng link t.me/socks, hoặc <code>host:port:user:pass</code>). Bot tự xoá tin nhắn chứa mật khẩu.');
+  if (note) L.push('', note);
+  const kb = list.map((p, i) => [{ text: `🗑 Xoá ${i + 1}. ${proxyId(p)}`, callback_data: `pxdel:${proxyId(p)}` }]);
+  kb.push([{ text: '🔄 Thử lại proxy + lấy giá P2P', callback_data: 'pxtest' }]);
+  return { text: L.join('\n'), kb };
+}
+
+async function testP2P(env) {
+  const r = await refresh(env, { only: ['p2p'], force: true });
+  const rec = r.data.p2p;
+  if (r.result.p2p === 'ok') {
+    const ads = rec.data.ads || [];
+    return `✅ <b>Lấy được giá P2P</b> qua <code>${esc(rec.data.via || '?')}</code>\n` + (ads.length ? ads.map((a, i) => `${i + 1}. <b>${a.price.toLocaleString('vi-VN')}</b> · ${esc(a.name)}`).join('\n') : '<i>(không có quảng cáo hợp lệ)</i>');
+  }
+  return `❌ <b>Chưa lấy được giá P2P</b>\n<i>${esc(String(r.result.p2p).replace(/^ERR /, ''))}</i>`;
+}
+
+async function addProxy(env, chatId, msgId, text) {
+  if (msgId) await tg(env, 'deleteMessage', { chat_id: chatId, message_id: msgId });
+  const p = parseProxy(text);
+  if (!p) { const v = await proxyView(env, '⚠️ Không đọc được proxy. Gửi link dạng <code>https://t.me/socks?server=…&amp;port=…&amp;user=…&amp;pass=…</code>'); return sendMsg(env, chatId, v.text, v.kb); }
+  const list = (await getProxies(env)).filter((q) => proxyId(q) !== proxyId(p));
+  list.unshift({ ...p, addedAt: Date.now() });
+  await saveProxies(env, list);
+  const wait = await sendMsg(env, chatId, `🔐 Đã lưu proxy <code>${esc(proxyId(p))}</code> (đã xoá tin nhắn chứa mật khẩu). Đang thử lấy giá Binance P2P…`);
+  const res = await testP2P(env);
+  const v = await proxyView(env, res);
+  return editOrSend(env, chatId, wait?.result?.message_id, v.text, v.kb);
+}
+
 // ---------- Xử lý update ----------
 export async function handleTelegram(req, env) {
   if (!env.TELEGRAM_BOT_TOKEN) return new Response('no token', { status: 503 });
@@ -257,6 +301,14 @@ async function processUpdate(env, upd, origin) {
     if (data === 'gia') return doBoard(env, chatId, mid);
     if (data === 'refresh') return doRefresh(env, chatId, mid);
     if (data === 'preview') return doPreview(env, chatId, false);
+    if (data === 'proxy') { const v = await proxyView(env); return editOrSend(env, chatId, mid, v.text, v.kb); }
+    if (data === 'pxtest') { const v = await proxyView(env, await testP2P(env)); return editOrSend(env, chatId, mid, v.text, v.kb); }
+    if (data.startsWith('pxdel:')) {
+      const id = data.slice(6);
+      await saveProxies(env, (await getProxies(env)).filter((q) => proxyId(q) !== id));
+      const v = await proxyView(env, `🗑 Đã xoá <code>${esc(id)}</code>`);
+      return editOrSend(env, chatId, mid, v.text, v.kb);
+    }
     if (data === 'settings') { const v = settingsView(await getSettings(env)); return editOrSend(env, chatId, mid, v.text, v.kb); }
     if (data.startsWith('set:')) {
       const [, k, val] = data.split(':');
@@ -279,6 +331,8 @@ async function processUpdate(env, upd, origin) {
   }
 
   const text = (msg.text || '').trim();
+  // Dán thẳng link proxy (không kèm lệnh) cũng nhận
+  if (!text.startsWith('/') && /t\.me\/socks\?|socks5h?:\/\//i.test(text)) return addProxy(env, chatId, msg.message_id, text);
   const [cmdRaw, ...rest] = text.split(/\s+/);
   const cmd = (cmdRaw || '').toLowerCase().replace(/@.*$/, '');
   const arg = rest.join(' ').trim();
@@ -301,6 +355,12 @@ async function processUpdate(env, upd, origin) {
     }
     case '/preview':
       return doPreview(env, chatId, /^(all|tat ca|tất cả)$/i.test(arg));
+    case '/proxy':
+    case '/proxies': {
+      if (arg) return addProxy(env, chatId, msg.message_id, arg);
+      const v = await proxyView(env);
+      return sendMsg(env, chatId, v.text, v.kb);
+    }
     case '/trmnl':
       return sendMsg(env, chatId, `<b>🖼 Cài đặt TRMNL</b>\n\nStrategy: <b>Polling</b>\nPolling URL:\n<code>${origin}/trmnl</code>`);
     case '/version':

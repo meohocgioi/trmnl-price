@@ -8,7 +8,7 @@ const vnHour = (ms) => new Date(ms + 7 * 3600000).getUTCHours() + new Date(ms).g
 
 // every: chu kỳ làm mới (ms). heavy: dùng Browser Rendering (tốn giờ trình duyệt → thưa hơn ban đêm)
 export const SOURCES = {
-  p2p:    { every: 5 * MIN,  label: 'Binance P2P', run: (env, s) => S.p2p({ side: s.p2pSide, minLimit: s.p2pMin }) },
+  p2p:    { every: 5 * MIN,  label: 'Binance P2P', run: (env, s) => S.p2p(env, { side: s.p2pSide, minLimit: s.p2pMin }) },
   black:  { every: 15 * MIN, label: 'USD chợ đen', run: () => S.blackUsd() },
   sjc:    { every: 15 * MIN, label: 'Vàng SJC', run: () => S.sjc() },
   phuquy: { every: 30 * MIN, label: 'Bạc Phú Quý', run: () => S.phuquy() },

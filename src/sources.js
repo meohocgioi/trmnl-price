@@ -1,5 +1,6 @@
 // Các nguồn dữ liệu giá. Mỗi hàm trả về object dữ liệu hoặc ném lỗi.
 import puppeteer from '@cloudflare/puppeteer';
+import { socksFetch, getProxies, saveProxies, proxyId } from './socks.js';
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36';
 const H = { 'user-agent': UA, 'accept-language': 'vi,en;q=0.8' };
@@ -46,17 +47,16 @@ const findRow = (rs, re) => rs.find((r) => re.test(r[0]));
 
 // ---------- 1. Binance P2P ----------
 // side: 'SELL' = tab Bán (giá bạn bán USDT được), 'BUY' = tab Mua
-export async function p2p({ side = 'SELL', minLimit = 10_000_000, count = 3 } = {}) {
+export async function p2p(env, { side = 'SELL', minLimit = 10_000_000, count = 3 } = {}) {
   const body = {
     fiat: 'VND', page: 1, rows: 20, tradeType: side, asset: 'USDT', countries: [],
     proMerchantAds: false, shieldMerchantAds: false, filterType: 'all', periods: [],
     additionalKycVerifyFilter: 0, publisherType: null, payTypes: [], classifies: ['mass', 'profession', 'fiat_trade'],
   };
+  const post = await p2pTransport(env);
   const all = [];
   for (let page = 1; page <= 3 && all.length < 60; page++) {
-    const text = await get('https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, page }),
-    });
+    const text = await post(JSON.stringify({ ...body, page }));
     let j;
     try { j = JSON.parse(text); } catch { throw new Error('Binance trả về dữ liệu lạ'); }
     if (j.code !== '000000') throw new Error(`Binance: ${j.message || j.code}`);
@@ -74,7 +74,51 @@ export async function p2p({ side = 'SELL', minLimit = 10_000_000, count = 3 } = 
     orders: x.advertiser?.monthOrderCount ?? null,
     rate: x.advertiser?.monthFinishRate != null ? Math.round(x.advertiser.monthFinishRate * 1000) / 10 : null,
   }));
-  return { side, minLimit, ads };
+  return { side, minLimit, ads, via: post.via };
+}
+
+const P2P_URL = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
+
+// Chọn đường gọi Binance: thử lần lượt các proxy SOCKS5 (KV "proxies"), proxy nào chạy được thì dùng;
+// chưa có proxy nào thì gọi thẳng (Binance thường chặn → lỗi 403).
+async function p2pTransport(env) {
+  const list = await getProxies(env);
+  if (!list.length) {
+    const f = async (b) => get(P2P_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: b });
+    f.via = 'trực tiếp';
+    return f;
+  }
+  const errs = [];
+  // proxy chạy tốt gần nhất lên trước
+  const order = [...list].sort((a, b) => (b.okAt || 0) - (a.okAt || 0));
+  for (const p of order) {
+    const f = async (b) => {
+      const r = await socksFetch(p, P2P_URL, { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': UA }, body: b });
+      if (r.status !== 200) throw new Error(`HTTP ${r.status}`);
+      return r.text;
+    };
+    try {
+      // thử nhanh 1 lần; được thì dùng proxy này cho cả lượt
+      const probe = await f(JSON.stringify({ fiat: 'VND', page: 1, rows: 1, tradeType: 'SELL', asset: 'USDT', payTypes: [], countries: [] }));
+      JSON.parse(probe);
+      await markProxy(env, p, null);
+      f.via = proxyId(p);
+      return f;
+    } catch (e) {
+      errs.push(`${proxyId(p)}: ${e.message}`);
+      await markProxy(env, p, e.message);
+    }
+  }
+  throw new Error('Tất cả proxy lỗi — ' + errs.join(' · ') + ' — gửi proxy mới bằng /proxy');
+}
+
+async function markProxy(env, p, err) {
+  const list = await getProxies(env);
+  const x = list.find((q) => proxyId(q) === proxyId(p));
+  if (!x) return;
+  if (err) { x.err = String(err).slice(0, 120); x.errAt = Date.now(); }
+  else { x.okAt = Date.now(); delete x.err; }
+  await saveProxies(env, list);
 }
 
 // Bỏ quảng cáo "Promoted Ad" (privilegeType 8); chỉ giữ quảng cáo có hạn mức tối đa > minLimit
