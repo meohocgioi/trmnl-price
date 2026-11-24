@@ -51,14 +51,12 @@ export default {
     if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('bn')) {
       const out = {};
       const tests = {
-        agentAdList: 'https://www.binance.com/bapi/c2c/v1/public/c2c/agent/ad-list?fiat=VND&asset=USDT&tradeType=SELL&page=1&rows=5',
-        agentQuote: 'https://www.binance.com/bapi/c2c/v1/public/c2c/agent/quote-price?fiat=VND&asset=USDT&tradeType=SELL',
-        sapiAds: 'https://api.binance.com/sapi/v1/c2c/agent/ads/search',
-        spotPing: 'https://api.binance.com/api/v3/ping',
-        visionPing: 'https://data-api.binance.vision/api/v3/ping',
+        bybit: ['https://api2.bybit.com/fiat/otc/item/online', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ tokenId: 'USDT', currencyId: 'VND', side: '0', size: '5', page: '1', payment: [], amount: '' }) }],
+        okx: ['https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=VND&baseCurrency=USDT&side=sell&paymentMethod=all&userType=all&showTrade=false&showFollow=false&showAlreadyTraded=false&isAbleFilter=false', {}],
+        mexc: ['https://p2p.mexc.com/api/market?adsType=1&coinId=128&currency=VND&page=1&pageSize=5', {}],
       };
       for (const [k, u] of Object.entries(tests)) {
-        try { const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0' } }); out[k] = r.status + ' ' + (await r.text()).slice(0, 220).replace(/\s+/g, ' '); }
+        try { const [uu, init] = u; const r = await fetch(uu, { ...init, headers: { 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36', ...(init.headers || {}) } }); out[k] = r.status + ' ' + (await r.text()).slice(0, 300).replace(/\s+/g, ' '); }
         catch (e) { out[k] = 'ERR ' + e.message; }
       }
       return json(out);
