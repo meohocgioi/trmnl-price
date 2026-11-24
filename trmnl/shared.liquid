@@ -18,7 +18,7 @@
   .r .n small{font-weight:600;font-size:11px;}
   .r .v{text-align:right;font-size:var(--fs);font-weight:900;letter-spacing:-.3px;}
   .r .v.s{font-weight:700;}
-  .r .v .c{font-size:11px;font-weight:800;letter-spacing:0;margin-right:3px;}
+  .r .v .c{font-size:11px;font-weight:800;letter-spacing:0;margin-left:4px;}
   .msg{font-size:14px;font-weight:700;padding:6px 0;}
   .msg small{display:block;font-weight:500;font-size:11px;}
   /* P2P: hạng | tên | hạn mức | giá */
@@ -145,7 +145,7 @@
         <div class="bx-t"><span>USD CHỢ ĐEN{% if black.stale %} <span class="stale">CŨ</span>{% endif %}</span><span class="h">Mua</span><span class="h">Bán</span></div>
         <div class="bx-b">
           {% if black.has %}
-          <div class="r"><span class="n">USD</span><span class="v"><span class="c">{{ black.buy_ch }}</span>{{ black.buy }}</span><span class="v"><span class="c">{{ black.sell_ch }}</span>{{ black.sell }}</span></div>
+          <div class="r"><span class="n">USD</span><span class="v">{{ black.buy }}<span class="c">{{ black.buy_ch }}</span></span><span class="v">{{ black.sell }}<span class="c">{{ black.sell_ch }}</span></span></div>
           {% else %}<div class="msg">{{ black.error }}</div>{% endif %}
         </div>
       </div>
