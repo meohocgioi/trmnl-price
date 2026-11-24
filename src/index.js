@@ -53,12 +53,21 @@ export default {
       const list = await getProxies(env);
       const out = {};
       await Promise.all(list.map(async (px) => {
-        const t0 = Date.now();
+        const row = {};
         try {
-          const r = await socksFetch(px, 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: { fiat: 'VND', page: 1, rows: 1, tradeType: 'SELL', asset: 'USDT', payTypes: [], countries: [] } });
-          let code = '?'; try { code = JSON.parse(r.text).code; } catch {}
-          out[proxyId(px)] = `HTTP ${r.status} · Binance code ${code} · ${Date.now() - t0}ms`;
-        } catch (e) { out[proxyId(px)] = 'ERR ' + e.message + ` · ${Date.now() - t0}ms`; }
+          const ip = await socksFetch(px, 'https://ipinfo.io/json');
+          const j = JSON.parse(ip.text); row.ip = `${j.ip} · ${j.city}, ${j.country} · ${j.org || ''}`;
+        } catch (e) { row.ip = 'ERR ' + e.message; }
+        for (const side of ['SELL', 'BUY']) {
+          const t0 = Date.now();
+          try {
+            const r = await socksFetch(px, 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: { fiat: 'VND', page: 1, rows: 10, tradeType: side, asset: 'USDT', payTypes: [], countries: [], proMerchantAds: false, shieldMerchantAds: false, filterType: 'all', periods: [], additionalKycVerifyFilter: 0, publisherType: null, classifies: ['mass', 'profession', 'fiat_trade'] } });
+            const j = JSON.parse(r.text);
+            const d = j.data || [];
+            row[side] = `HTTP ${r.status} · code ${j.code} · ${d.length} QC · đầu bảng ${d[0]?.adv?.price} (${d[0]?.advertiser?.nickName}) · ${Date.now() - t0}ms`;
+          } catch (e) { row[side] = 'ERR ' + e.message + ` · ${Date.now() - t0}ms`; }
+        }
+        out[proxyId(px)] = row;
       }));
       return json(out);
     }
