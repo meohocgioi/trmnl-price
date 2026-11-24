@@ -132,13 +132,14 @@ function boardText(v) {
   L.push('', `<b>🥇 Vàng SJC</b> · ${v.unit_label} <i>(mua / bán)</i>`);
   if (v.gold.has) {
     L.push(`<code>Miếng ${pad(v.gold.bar.buy, 13)} ${pad(v.gold.bar.sell, 13)}</code>`);
-    if (v.gold.ring) L.push(`<code>Nhẫn  ${pad(v.gold.ring.buy, 13)} ${pad(v.gold.ring.sell, 13)}</code>`);
+    if (v.gold.diff) L.push(`Chênh TG: mua <b>${v.gold.diff.buy}</b> · bán <b>${v.gold.diff.sell}</b> <i>(TG ≈ ${v.gold.world})</i>`);
   } else L.push(`⚠️ <i>${esc(v.gold.error)}</i>`);
 
   L.push('', `<b>🥈 Bạc</b> · ${v.unit_label} <i>(mua / bán)</i>`);
   for (const b of v.silver) {
-    L.push(b.has ? `<code>${b.name.padEnd(11)} ${pad(b.buy, 11)} ${pad(b.sell, 11)}</code>` : `${b.name}: ⚠️ <i>${esc(b.error)}</i>`);
+    L.push(b.has ? `<code>${b.name.padEnd(8)} ${pad(b.buy, 11)} ${pad(b.sell, 11)}</code>` : `${b.name}: ⚠️ <i>${esc(b.error)}</i>`);
   }
+  if (v.silver_diff) L.push(`Chênh TG (giá bán): ${v.silver_diff.items.map((d) => `${d.name} <b>${d.diff}</b>`).join(' · ')} <i>(TG ≈ ${v.silver_diff.world})</i>`);
 
   L.push('', '<b>🌍 Thế giới</b> (USD/oz)');
   for (const w of v.world) L.push(`${w.name} (${w.short}): <b>${w.price}</b> ${w.pct}`);

@@ -71,7 +71,7 @@
         <div class="bx-b">
           {% if gold.has %}
           <div class="r"><span class="n">Miếng</span><span class="v s">{{ gold.bar.buy }}</span><span class="v">{{ gold.bar.sell }}</span></div>
-          {% if gold.ring %}<div class="r x-ring"><span class="n">Nhẫn</span><span class="v s">{{ gold.ring.buy }}</span><span class="v">{{ gold.ring.sell }}</span></div>{% endif %}
+          {% if gold.diff %}<div class="r dr"><span class="n">Chênh TG<small>TG ≈ {{ gold.world }}</small></span><span class="v s">{{ gold.diff.buy }}</span><span class="v">{{ gold.diff.sell }}</span></div>{% endif %}
           {% else %}<div class="msg">{{ gold.error }}</div>{% endif %}
         </div>
       </div>
@@ -82,6 +82,7 @@
           {% for b in silver %}
           <div class="r"><span class="n">{{ b.name }}{% if b.stale %} <span class="stale">CŨ</span>{% endif %}</span>{% if b.has %}<span class="v s">{{ b.buy }}</span><span class="v">{{ b.sell }}</span>{% else %}<span class="v s" style="font-size:12px;">{{ b.error }}</span><span></span>{% endif %}</div>
           {% endfor %}
+          {% if silver_diff %}<div class="r dl"><span class="n">Chênh TG<small>TG ≈ {{ silver_diff.world }}</small></span><span class="dv">{% for d in silver_diff.items %}<span>{{ d.name }} <b>{{ d.diff }}</b></span>{% endfor %}</span></div>{% endif %}
         </div>
       </div>
 

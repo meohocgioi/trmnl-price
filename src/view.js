@@ -19,6 +19,14 @@ export function short(n) {
   if (n >= 1e3) return Math.round(n / 1e3) + 'k';
   return String(n);
 }
+// Số gọn: ≥ 10 triệu → "25,47 tr", nhỏ hơn → đủ số "358.000"
+export const compact = (n) => {
+  if (n == null) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e7) { const [i, f] = (n / 1e6).toFixed(2).split('.'); return vnd(Number(i)) + ',' + f + ' tr'; }
+  return vnd(Math.round(n / 1000) * 1000);
+};
+const signedC = (n) => (n == null ? '' : (n > 0 ? '+' : n < 0 ? '−' : '±') + compact(Math.abs(n)));
 const signed = (n, fmt = vnd) => (n == null ? '' : (n > 0 ? '+' : n < 0 ? '−' : '±') + fmt(Math.abs(n)));
 const usd = (n, d = 2) => Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 
@@ -92,25 +100,38 @@ export function buildView(all, s, now = Date.now()) {
   });
   const usdVcb = F.d?.rates?.USD ? { buy: vnd(F.d.rates.USD.buy), sell: vnd(F.d.rates.USD.sell) } : null;
 
-  // 4. Vàng SJC
+  // Quy đổi giá thế giới (USD/oz) ra VND theo đơn vị đang chọn: 1 lượng = 37,5 g = 1,20565 oz; tỷ giá bán USD Vietcombank
+  const W = st('world');
+  const OZ_PER_LUONG = 37.5 / 31.1034768;
+  const usdRate = F.d?.rates?.USD?.sell ?? F.d?.rates?.USD?.transfer ?? null;
+  const worldVnd = (k) => (W.d?.[k]?.price != null && usdRate ? W.d[k].price * OZ_PER_LUONG * usdRate * unit : null);
+  const goldW = worldVnd('gold'), silverW = worldVnd('silver');
+
+  // 4. Vàng SJC (miếng) + dòng chênh lệch so với thế giới
   const G = st('sjc');
   const gold = G.has
     ? {
         has: true, stale: G.stale,
         bar: { buy: vnd(u(G.d.bar.buy)), sell: vnd(u(G.d.bar.sell)) },
-        ring: G.d.ring ? { buy: vnd(u(G.d.ring.buy)), sell: vnd(u(G.d.ring.sell)) } : null,
+        world: goldW != null ? compact(goldW) : '',
+        diff: goldW != null ? { buy: signedC(u(G.d.bar.buy) - goldW), sell: signedC(u(G.d.bar.sell) - goldW) } : null,
       }
     : { has: false, error: shortErr(G.err) };
 
-  // 5. Bạc
+  // 5. Bạc + dòng chênh lệch (giá bán của từng hãng so với thế giới)
   const D = st('doji'), Q = st('phuquy');
   const silver = [
     { name: 'DOJI', has: D.has, stale: D.stale, buy: D.has ? vnd(u(D.d.buy)) : '—', sell: D.has ? vnd(u(D.d.sell)) : '—', error: D.has ? '' : shortErr(D.err) },
     { name: 'Phú Quý', has: Q.has, stale: Q.stale, buy: Q.has ? vnd(u(Q.d.buy)) : '—', sell: Q.has ? vnd(u(Q.d.sell)) : '—', error: Q.has ? '' : shortErr(Q.err) },
   ];
+  const silverDiff = silverW != null
+    ? {
+        world: compact(silverW),
+        items: [['DOJI', D], ['Phú Quý', Q]].filter(([, X]) => X.has).map(([name, X]) => ({ name, diff: signedC(u(X.d.sell) - silverW) })),
+      }
+    : null;
 
   // 6. Thế giới
-  const W = st('world');
   const world = WORLD.map((w) => {
     const r = W.d?.[w.key];
     return r
@@ -131,7 +152,7 @@ export function buildView(all, s, now = Date.now()) {
   return {
     updated: hhmm(now), updated_full: stamp(now),
     unit, unit_label: unit === 10 ? '10 lượng' : '1 lượng',
-    p2p, black, fx, usd_vcb: usdVcb, gold, silver, world, fuel,
+    p2p, black, fx, usd_vcb: usdVcb, gold, silver, silver_diff: silverDiff, world, fuel,
     warn: warn.join(' · '), warn_count: warn.length,
   };
 }
