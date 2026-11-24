@@ -24,6 +24,12 @@
   /* P2P: hạng | tên | hạn mức | giá */
   .p2p .r{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;column-gap:8px;}
   .p2p .rk{width:20px;height:20px;border-radius:50%;background:#000;color:#fff;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;align-self:center;}
+  /* Huy hiệu thương nhân: Vàng = nền đen, Bạc = nền xám, Đồng = viền đen, Block = ô vuông đen */
+  .p2p .bd{width:15px;height:15px;margin-left:4px;vertical-align:-2px;}
+  .p2p .bd circle,.p2p .bd rect{fill:#000;stroke:#000;stroke-width:1.5;}.p2p .bd path{fill:#fff;}
+  .p2p .bd-silver circle{fill:#888;stroke:#888;}
+  .p2p .bd-bronze circle{fill:#fff;}.p2p .bd-bronze path{fill:#000;}
+  .p2p .bd-merchant circle{fill:#fff;}.p2p .bd-merchant path{fill:#000;}
   .p2p .lim{font-size:12px;font-weight:700;text-align:right;}
   .p2p .p2{font-size:24px;font-weight:900;letter-spacing:-.5px;text-align:right;min-width:96px;}
   .p2p .sd{font-size:10px;font-weight:900;letter-spacing:1px;padding-top:2px;}
@@ -103,13 +109,13 @@
           {% if p2p.has %}
             {% if p2p.show_buy %}<div class="sd x-buy">GIÁ BÁN</div>{% endif %}
             {% for a in p2p.ads %}
-            <div class="r"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
+            <div class="r"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}{% if a.badge != "" %}<svg class="bd bd-{{ a.badge }}" viewBox="0 0 16 16">{% if a.badge == "block" %}<rect x="1" y="1" width="14" height="14" rx="3"/>{% else %}<circle cx="8" cy="8" r="7"/>{% endif %}<path d="M8 2.3C8.5 6.3 9.7 7.5 13.7 8 9.7 8.5 8.5 9.7 8 13.7 7.5 9.7 6.3 8.5 2.3 8 6.3 7.5 7.5 6.3 8 2.3Z"/></svg>{% endif %}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
             {% endfor %}
             {% if p2p.show_buy %}
             <div class="sd x-buy">GIÁ MUA</div>
             {% if p2p.buy_has %}
             {% for a in p2p.buy %}
-            <div class="r x-buy"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
+            <div class="r x-buy"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}{% if a.badge != "" %}<svg class="bd bd-{{ a.badge }}" viewBox="0 0 16 16">{% if a.badge == "block" %}<rect x="1" y="1" width="14" height="14" rx="3"/>{% else %}<circle cx="8" cy="8" r="7"/>{% endif %}<path d="M8 2.3C8.5 6.3 9.7 7.5 13.7 8 9.7 8.5 8.5 9.7 8 13.7 7.5 9.7 6.3 8.5 2.3 8 6.3 7.5 7.5 6.3 8 2.3Z"/></svg>{% endif %}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
             {% endfor %}
             {% else %}<div class="msg x-buy">Chưa có giá mua</div>{% endif %}
             {% endif %}

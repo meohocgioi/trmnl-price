@@ -106,6 +106,7 @@ export async function setupWebhook(env, origin, opts = {}) {
 
 // ---------- Nội dung ----------
 const pad = (s, n) => String(s).padStart(n);
+const BADGE = { gold: ' 🥇', silver: ' 🥈', bronze: ' 🥉', block: ' 🔷', merchant: ' ✔️' };
 
 function boardText(v) {
   const L = [`<b>💰 BẢNG GIÁ</b> · ${v.updated_full}`, ''];
@@ -113,10 +114,10 @@ function boardText(v) {
   L.push(`<b>₮ USDT P2P Binance</b> <i>(bỏ QC trả tiền)</i>`);
   if (v.p2p.has) {
     L.push('<u>Giá BÁN</u>');
-    for (const a of v.p2p.ads) L.push(`${a.rank}. <b>${a.price}</b> · ${esc(a.name)} · <i>${a.limit}</i>`);
+    for (const a of v.p2p.ads) L.push(`${a.rank}. <b>${a.price}</b> · ${esc(a.full)}${BADGE[a.badge] || ''} · <i>${a.limit}</i>`);
     if (v.p2p.show_buy) {
       L.push('<u>Giá MUA</u>');
-      if (v.p2p.buy_has) for (const a of v.p2p.buy) L.push(`${a.rank}. <b>${a.price}</b> · ${esc(a.name)} · <i>${a.limit}</i>`);
+      if (v.p2p.buy_has) for (const a of v.p2p.buy) L.push(`${a.rank}. <b>${a.price}</b> · ${esc(a.full)}${BADGE[a.badge] || ''} · <i>${a.limit}</i>`);
       else L.push('<i>chưa có</i>');
     }
   } else L.push(`⚠️ <i>${esc(v.p2p.error)}</i>`);

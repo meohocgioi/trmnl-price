@@ -24,6 +24,12 @@
   /* P2P: hạng | tên | hạn mức | giá */
   .p2p .r{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;column-gap:8px;}
   .p2p .rk{width:20px;height:20px;border-radius:50%;background:#000;color:#fff;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;align-self:center;}
+  /* Huy hiệu thương nhân: Vàng = nền đen, Bạc = nền xám, Đồng = viền đen, Block = ô vuông đen */
+  .p2p .bd{width:15px;height:15px;margin-left:4px;vertical-align:-2px;}
+  .p2p .bd circle,.p2p .bd rect{fill:#000;stroke:#000;stroke-width:1.5;}.p2p .bd path{fill:#fff;}
+  .p2p .bd-silver circle{fill:#888;stroke:#888;}
+  .p2p .bd-bronze circle{fill:#fff;}.p2p .bd-bronze path{fill:#000;}
+  .p2p .bd-merchant circle{fill:#fff;}.p2p .bd-merchant path{fill:#000;}
   .p2p .lim{font-size:12px;font-weight:700;text-align:right;}
   .p2p .p2{font-size:24px;font-weight:900;letter-spacing:-.5px;text-align:right;min-width:96px;}
   .p2p .sd{font-size:10px;font-weight:900;letter-spacing:1px;padding-top:2px;}

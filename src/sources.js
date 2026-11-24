@@ -68,6 +68,7 @@ export async function p2p(env, { minLimit = 10_000_000, withBuy = false, count =
     }
     return all.filter((x) => valid(x, minLimit)).slice(0, want).map((x) => ({
       name: x.advertiser?.nickName || '?',
+      badge: badgeOf(x.advertiser),
       price: Number(x.adv.price),
       min: Number(x.adv.minSingleTransAmount),
       max: Number(x.adv.dynamicMaxSingleTransAmount || x.adv.maxSingleTransAmount),
@@ -124,6 +125,13 @@ async function markProxy(env, p, err) {
   if (err) { x.err = String(err).slice(0, 120); x.errAt = Date.now(); }
   else { x.okAt = Date.now(); delete x.err; }
   await saveProxies(env, list);
+}
+
+// Huy hiệu thương nhân Binance P2P: vipLevel 1/2/3 = Đồng/Bạc/Vàng; Block merchant riêng
+function badgeOf(a) {
+  if (!a || a.userType !== 'merchant') return '';
+  if (a.userIdentity === 'BLOCK_MERCHANT' || (a.badges || []).includes('Block')) return 'block';
+  return { 1: 'bronze', 2: 'silver', 3: 'gold' }[a.vipLevel] || 'merchant';
 }
 
 // Bỏ quảng cáo "Promoted Ad" (privilegeType 8); chỉ giữ quảng cáo có hạn mức tối đa > minLimit

@@ -52,7 +52,7 @@ export function buildView(all, s, now = Date.now()) {
 
   // 1. P2P Binance: luôn hiện giá Bán; giá Mua khi bật trong /setting
   const P = st('p2p');
-  const adRow = (a, i) => ({ rank: i + 1, name: a.name, price: vnd(a.price), limit: `${short(a.min)}–${short(a.max)}` });
+  const adRow = (a, i) => ({ rank: i + 1, name: [...a.name].length > 7 ? [...a.name].slice(0, 7).join('') + '...' : a.name, full: a.name, badge: a.badge || '', price: vnd(a.price), limit: `${short(a.min)}–${short(a.max)}` });
   const showBuy = !!s.showBuy;
   const p2p = {
     has: P.has && P.d.ads?.length > 0,
