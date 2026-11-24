@@ -139,21 +139,24 @@ export function buildView(all, s, now = Date.now()) {
 // Biểu đồ đường SVG (viewBox 300×60) cho khoảng thời gian `span` gần nhất; vạch dọc mỗi `tick`
 function buildChart(hist, idx, now, span, tick, label) {
   const W = 300, H = 60, pad = 4;
-  const start = now - span;
-  const pts = hist.filter((p) => p[0] >= start && p[idx] != null).map((p) => [p[0], p[idx]]);
-  const have = hist.length ? now - hist[0][0] : 0;
+  const pts = hist.filter((p) => p[0] >= now - span && p[idx] != null).map((p) => [p[0], p[idx]]);
   if (pts.length < 2) return { has: false, label, note: 'đang thu thập dữ liệu' };
+  // Chưa đủ dữ liệu cả khoảng → kéo dãn phần đang có cho hết chiều rộng
+  const start = Math.max(now - span, pts[0][0]);
+  const width = Math.max(now - start, 60000);
+  const partial = now - pts[0][0] < span * 0.97;
   const lo = Math.min(...pts.map((p) => p[1])), hi = Math.max(...pts.map((p) => p[1]));
   let min = lo, max = hi;
   if (max - min < 20) { const m = (max + min) / 2; min = m - 10; max = m + 10; }
-  const xy = pts.map(([t, v]) => `${((t - start) / span * W).toFixed(1)},${(pad + (1 - (v - min) / (max - min)) * (H - 2 * pad)).toFixed(1)}`);
+  const xy = pts.map(([t, v]) => `${((t - start) / width * W).toFixed(1)},${(pad + (1 - (v - min) / (max - min)) * (H - 2 * pad)).toFixed(1)}`);
+  // vạch dọc mỗi `tick` tính lùi từ hiện tại (mỗi 6 giờ / mỗi ngày)
   const ticks = [];
-  for (let t = tick; t < span; t += tick) ticks.push((t / span * W).toFixed(1));
+  for (let t = now - tick; t > start; t -= tick) ticks.push(((t - start) / width * W).toFixed(1));
   const first = pts[0][1], last = pts[pts.length - 1][1];
-  const partial = have < span * 0.97;
-  const unit = span > 86400000 ? `${Math.max(1, Math.round(have / 86400000))}/7 ngày` : `${Math.max(1, Math.round(have / 3600000))}/24 giờ`;
+  const have = now - pts[0][0];
+  const lab = !partial ? label : span > 86400000 ? `${Math.max(1, Math.round(have / 86400000))}/7 NGÀY` : have < 3600000 ? `${Math.max(1, Math.round(have / 60000))} PHÚT` : `${Math.round(have / 3600000)}/24 GIỜ`;
   return {
-    has: true, label: partial ? unit : label, points: xy.join(' '), ticks,
+    has: true, label: lab, points: xy.join(' '), ticks,
     hi: vnd(hi), lo: vnd(lo), change: last === first ? '±0' : signed(last - first), up: last >= first,
   };
 }
