@@ -158,22 +158,41 @@ function boardText(v) {
 }
 
 function settingsView(s, note = '') {
-  const tick = (b) => (b ? '✅ ' : '');
-  const text =
-    `<b>⚙️ Cài đặt</b>\n\n` +
-    `<b>₮ USDT P2P Binance:</b> 3 quảng cáo đầu (bỏ Promoted Ad), hạn mức tối đa &gt; <b>${short(s.p2pMin)}</b> · giá <b>BÁN</b>${s.showBuy ? ' + <b>MUA</b>' : ''}\n` +
-    `<b>🥇 Vàng / 🥈 Bạc:</b> giá cho <b>${s.unit === 10 ? '10 lượng' : '1 lượng'}</b>\n` +
-    `<b>📊 Đối chiếu:</b> Bybit ${s.showBybit !== false ? 'BẬT' : 'TẮT'} · OKX ${s.showOkx !== false ? 'BẬT' : 'TẮT'} · Biểu đồ 1 tuần (Binance) ${s.showChart !== false ? 'BẬT' : 'TẮT'}\n` +
-    `<b>⛽ Xăng:</b> E10${s.showE5 ? ' + E5' : ''}\n\n` +
-    `<i>TRMNL đổi ở lần làm mới tới (≤ 15 phút) — hoặc /preview để xem ngay.</i>` +
-    (note ? `\n\n${note}` : '');
+  const on = (b) => (b ? '✅ BẬT' : '⬜ TẮT');
+  const pick = (b, label) => ({ text: `${b ? '🔘' : '⚪'} ${label}`, b });
+  const tog = (b, label) => `${b ? '✅' : '⬜'} ${label}`;
+  const bybit = s.showBybit !== false, okx = s.showOkx !== false, chart = s.showChart !== false;
+  const text = [
+    '<b>⚙️ CÀI ĐẶT BẢNG GIÁ</b>',
+    '',
+    '<b>₮ USDT P2P · Binance</b>',
+    `├ Hạn mức tối đa:  <b>&gt; ${short(s.p2pMin)}</b>`,
+    `├ Giá hiện:  <b>Bán</b>${s.showBuy ? ' + <b>Mua</b>' : ''}`,
+    `├ Đối chiếu Bybit:  ${on(bybit)}`,
+    `├ Đối chiếu OKX:  ${on(okx)}`,
+    `└ Biểu đồ 24h + 7 ngày:  ${on(chart)}`,
+    '',
+    '<b>🥇 Vàng · 🥈 Bạc</b>',
+    `└ Giá cho:  <b>${s.unit === 10 ? '10 lượng' : '1 lượng'}</b>`,
+    '',
+    '<b>⛽ Xăng</b>',
+    `└ Hiện:  <b>E10</b>${s.showE5 ? ' + <b>E5</b>' : ''}`,
+    '',
+    '<i>Bấm nút bên dưới để đổi. TRMNL cập nhật ở lần làm mới tới (≤ 15 phút), hoặc bấm 🖼 Xem trước.</i>',
+    ...(note ? ['', note] : []),
+  ].join('\n');
+  const head = (t) => [{ text: `━━  ${t}  ━━`, callback_data: 'noop' }];
   const kb = [
-    P2P_MINS.map((m) => ({ text: `${tick(s.p2pMin === m)}Hạn mức > ${short(m)}`, callback_data: `set:p2pMin:${m}` })),
-    [{ text: `${s.showBuy ? '☑️' : '⬜'} Hiện thêm giá MUA USDT (mặc định chỉ giá BÁN)`, callback_data: 'set:showBuy:toggle' }],
-    [{ text: `${tick(s.unit === 1)}1 lượng`, callback_data: 'set:unit:1' }, { text: `${tick(s.unit === 10)}10 lượng`, callback_data: 'set:unit:10' }],
-    [{ text: `${s.showBybit !== false ? '☑️' : '⬜'} Bybit`, callback_data: 'set:showBybit:toggle' }, { text: `${s.showOkx !== false ? '☑️' : '⬜'} OKX`, callback_data: 'set:showOkx:toggle' }, { text: `${s.showChart !== false ? '☑️' : '⬜'} Biểu đồ 1 tuần`, callback_data: 'set:showChart:toggle' }],
-    [{ text: `${s.showE5 ? '☑️' : '⬜'} Hiện thêm xăng E5`, callback_data: 'set:showE5:toggle' }, { text: '🧦 Proxy P2P', callback_data: 'proxy' }],
-    [{ text: '🖼 Xem trước TRMNL', callback_data: 'preview' }, { text: '💰 Bảng giá', callback_data: 'gia' }],
+    head('₮ P2P BINANCE'),
+    P2P_MINS.map((m) => { const x = pick(s.p2pMin === m, `> ${short(m)}`); return { text: x.text, callback_data: `set:p2pMin:${m}` }; }),
+    [{ text: tog(s.showBuy, 'Hiện cả giá Mua'), callback_data: 'set:showBuy:toggle' }],
+    [{ text: tog(bybit, 'Bybit'), callback_data: 'set:showBybit:toggle' }, { text: tog(okx, 'OKX'), callback_data: 'set:showOkx:toggle' }, { text: tog(chart, 'Biểu đồ'), callback_data: 'set:showChart:toggle' }],
+    head('🥇 VÀNG · 🥈 BẠC'),
+    [{ text: pick(s.unit !== 10, '1 lượng').text, callback_data: 'set:unit:1' }, { text: pick(s.unit === 10, '10 lượng').text, callback_data: 'set:unit:10' }],
+    head('⛽ XĂNG'),
+    [{ text: tog(s.showE5, 'Thêm E5'), callback_data: 'set:showE5:toggle' }],
+    head('KHÁC'),
+    [{ text: '🧦 Proxy', callback_data: 'proxy' }, { text: '🖼 Xem trước', callback_data: 'preview' }, { text: '💰 Bảng giá', callback_data: 'gia' }],
   ];
   return { text, kb };
 }
@@ -307,7 +326,8 @@ async function processUpdate(env, upd, origin) {
 
   if (upd.callback_query) {
     const data = upd.callback_query.data || '';
-    await tg(env, 'answerCallbackQuery', { callback_query_id: upd.callback_query.id });
+    await tg(env, 'answerCallbackQuery', { callback_query_id: upd.callback_query.id, ...(data.startsWith('set:') ? { text: '✅ Đã lưu' } : {}) });
+    if (data === 'noop') return;
     const mid = msg.message_id;
     if (data === 'gia') return doBoard(env, chatId, mid);
     if (data === 'refresh') return doRefresh(env, chatId, mid);
@@ -329,10 +349,10 @@ async function processUpdate(env, upd, origin) {
       else if (k === 'p2pMin') s.p2pMin = P2P_MINS.includes(Number(val)) ? Number(val) : DEFAULT_SETTINGS.p2pMin;
       else if (k === 'unit') s.unit = val === '10' ? 10 : 1;
       await saveSettings(env, s);
-      let note = '✅ Đã lưu.';
+      let note = '';
       if (k.startsWith('p2p') || k === 'showBuy') {
         const r = await refresh(env, { only: ['p2p'], force: true });
-        if (r.result.p2p !== 'ok') note = `✅ Đã lưu. ⚠️ Chưa lấy được giá P2P mới: <i>${esc(String(r.result.p2p).replace(/^ERR /, ''))}</i>`;
+        if (r.result.p2p !== 'ok') note = `⚠️ Chưa lấy được giá P2P mới: <i>${esc(String(r.result.p2p).replace(/^ERR /, ''))}</i>`;
       }
       const v = settingsView(s, note);
       return editOrSend(env, chatId, mid, v.text, v.kb);
