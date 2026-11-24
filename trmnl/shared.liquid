@@ -1,0 +1,170 @@
+<style>
+  .pb{--pad:14px;--gap:10px;--fs:19px;display:flex;flex-direction:column;gap:8px;width:100%;height:100%;box-sizing:border-box;padding:12px 16px;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#000;background:#fff;font-variant-numeric:tabular-nums;}
+  .pb *{box-sizing:border-box;}
+  .pb-hd{flex:none;display:flex;align-items:center;gap:10px;height:30px;}
+  .pb-hd .t{font-size:22px;font-weight:900;letter-spacing:1px;}
+  .pb-hd .chip{font-size:12px;font-weight:800;border:2px solid #000;border-radius:999px;padding:1px 9px;white-space:nowrap;}
+  .pb-hd .sp{flex:1;}
+  .pb-hd .u{font-size:13px;font-weight:700;white-space:nowrap;}
+  .pb-main{flex:1;min-height:0;display:flex;gap:var(--gap);}
+  .pb-col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:var(--gap);}
+  .bx{border:3px solid #000;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;}
+  .bx.grow{flex:1 1 auto;}
+  .bx-t{display:flex;align-items:center;gap:8px;background:#000;color:#fff;padding:3px 10px;font-size:13px;font-weight:900;letter-spacing:.8px;white-space:nowrap;}
+  .bx-t .sp{flex:1;}
+  .bx-t .h{font-size:11px;font-weight:800;letter-spacing:.5px;width:var(--cw);text-align:right;}
+  .bx-t i{font-style:normal;font-weight:700;font-size:11px;letter-spacing:0;}
+  .bx-b{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;padding:3px 10px;}
+  .r{display:flex;align-items:baseline;gap:8px;white-space:nowrap;min-height:0;}
+  .r + .r{border-top:1px dashed #999;}
+  .r .n{flex:1;min-width:0;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;}
+  .r .n small{font-weight:600;font-size:11px;}
+  .r .v{width:var(--cw);text-align:right;font-size:var(--fs);font-weight:900;letter-spacing:-.3px;}
+  .r .v.s{font-weight:700;}
+  .r .c{font-size:11px;font-weight:800;}
+  .r .rk{flex:none;width:20px;height:20px;border-radius:50%;background:#000;color:#fff;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;align-self:center;}
+  .r .lim{flex:none;font-size:12px;font-weight:700;width:92px;text-align:right;}
+  .r .p2{flex:none;font-size:24px;font-weight:900;letter-spacing:-.5px;}
+  .msg{font-size:14px;font-weight:700;padding:6px 0;}
+  .msg small{display:block;font-weight:500;font-size:11px;}
+  .gold{--cw:134px;--fs:17px;}
+  .gold .r{gap:6px;}
+  .gold .r .n{flex:1 0 64px;font-size:14px;}
+  .gold .r .v{letter-spacing:-.6px;}
+  .fxb{--cw:86px;}
+  .blk{--cw:120px;}
+  .wd .v{font-size:20px;}
+  .wd .pc{flex:none;width:72px;text-align:right;font-size:13px;font-weight:900;}
+  .wd .pc.dn{background:#000;color:#fff;border-radius:4px;padding:0 4px;}
+  .fu{flex:none;display:flex;align-items:center;gap:10px;border:3px solid #000;border-radius:10px;overflow:hidden;height:42px;white-space:nowrap;}
+  .fu .t{align-self:stretch;display:flex;align-items:center;background:#000;color:#fff;padding:0 10px;font-size:13px;font-weight:900;letter-spacing:.8px;}
+  .fu .p{font-size:22px;font-weight:900;}
+  .fu .p small{font-size:12px;font-weight:700;}
+  .fu .c{font-size:13px;font-weight:900;}
+  .fu .sp{flex:1;}
+  .fu .d{font-size:11px;font-weight:700;padding-right:10px;}
+  .fu .e5{font-size:13px;font-weight:700;}
+  .stale{font-size:10px;font-weight:900;border:1px solid #fff;border-radius:3px;padding:0 3px;}
+  .pb-warn{flex:none;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid #000;padding-top:2px;}
+  .pb .S{display:none;}
+
+  /* ===== Nửa ngang (800×240): P2P + USD | Vàng + bạc + thế giới ===== */
+  .sz-hh .pb{padding:6px 10px;gap:5px;--gap:6px;--fs:16px;}
+  .sz-hh .pb-hd{height:20px;}.sz-hh .pb-hd .t{font-size:15px;}.sz-hh .pb-hd .chip{font-size:10px;padding:0 6px;}.sz-hh .pb-hd .u{font-size:11px;}
+  .sz-hh .x-fx,.sz-hh .x-fu,.sz-hh .x-ring,.sz-hh .pb-warn,.sz-hh .x-lim{display:none;}
+  .sz-hh .bx{border-width:2px;border-radius:7px;}.sz-hh .bx-t{padding:1px 8px;font-size:11px;}
+  .sz-hh .bx-b{padding:1px 8px;}.sz-hh .r .n{font-size:12px;}.sz-hh .r .p2{font-size:18px;}
+  .sz-hh .r .rk{width:16px;height:16px;font-size:10px;}
+  .sz-hh .gold{--cw:112px;--fs:15px;}.sz-hh .gold .r .n{flex-basis:50px;}.sz-hh .wd .v{font-size:15px;}
+
+  /* ===== Nửa dọc (400×480): 1 cột ===== */
+  .sz-hv .pb{padding:8px 10px;gap:6px;--gap:6px;--fs:16px;}
+  .sz-hv .pb-main{flex-direction:column;}
+  .sz-hv .pb-hd{height:22px;}.sz-hv .pb-hd .t{font-size:16px;}.sz-hv .pb-hd .chip{display:none;}.sz-hv .pb-hd .u{font-size:11px;}
+  .sz-hv .x-fx,.sz-hv .x-ring,.sz-hv .x-lim,.sz-hv .x-e5{display:none;}
+  .sz-hv .bx{border-width:2px;border-radius:8px;}.sz-hv .bx-t{padding:1px 8px;font-size:11px;}
+  .sz-hv .bx-b{padding:1px 8px;}.sz-hv .r .n{font-size:12px;}.sz-hv .r .p2{font-size:18px;}
+  .sz-hv .r .rk{width:16px;height:16px;font-size:10px;}
+  .sz-hv .gold{--cw:124px;--fs:16px;}.sz-hv .gold .r .n{flex-basis:60px;}.sz-hv .blk{--cw:100px;}.sz-hv .wd .v{font-size:15px;}
+  .sz-hv .fu{height:32px;border-width:2px;border-radius:8px;}.sz-hv .fu .t{font-size:11px;padding:0 7px;}.sz-hv .fu .p{font-size:17px;}.sz-hv .fu .d{display:none;}
+  .sz-hv .pb-warn{font-size:9px;}
+
+  /* ===== 1/4 (400×240): P2P + USD chợ đen + vàng miếng ===== */
+  .sz-q .pb{padding:5px 7px;gap:4px;--gap:4px;--fs:14px;}
+  .sz-q .pb-main{flex-direction:column;}
+  .sz-q .pb-hd{height:16px;}.sz-q .pb-hd .t{font-size:12px;}.sz-q .pb-hd .chip,.sz-q .pb-hd .u{display:none;}
+  .sz-q .x-fx,.sz-q .x-ring,.sz-q .x-lim,.sz-q .x-silver,.sz-q .x-world,.sz-q .x-fu,.sz-q .pb-warn{display:none;}
+  .sz-q .bx{border-width:2px;border-radius:6px;}.sz-q .bx-t{padding:0 6px;font-size:10px;}
+  .sz-q .bx-b{padding:0 6px;}.sz-q .r .n{font-size:11px;}.sz-q .r .p2{font-size:15px;}
+  .sz-q .r .rk{width:14px;height:14px;font-size:9px;}
+  .sz-q .gold{--cw:112px;--fs:14px;}.sz-q .gold .r .n{flex-basis:44px;}.sz-q .gold{flex:0 0 auto;}.sz-q .blk{--cw:86px;}
+  .sz-q .L{display:none;}.sz-q .S{display:inline;}
+</style>
+{% capture pb_body %}
+<div class="pb">
+  <div class="pb-hd">
+    <div class="t">BẢNG GIÁ</div>
+    <div class="chip">Vàng/bạc: {{ unit_label }}</div>
+    <div class="sp"></div>
+    <div class="u">Cập nhật {{ updated }}</div>
+  </div>
+
+  <div class="pb-main">
+    <div class="pb-col">
+      <div class="bx grow">
+        <div class="bx-t">USDT P2P · {{ p2p.side }}<i class="x-lim">hạn mức &gt; {{ p2p.min }}</i>{% if p2p.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><i>Binance</i></div>
+        <div class="bx-b">
+          {% if p2p.has %}
+            {% for a in p2p.ads %}
+            <div class="r"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
+            {% endfor %}
+          {% else %}
+            <div class="msg">Chưa lấy được giá P2P<small>{{ p2p.error }}</small></div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bx blk">
+        <div class="bx-t">USD CHỢ ĐEN{% if black.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% if black.has %}
+          <div class="r"><span class="n">USD</span><span class="v">{{ black.buy }} <span class="c">{{ black.buy_ch }}</span></span><span class="v">{{ black.sell }} <span class="c">{{ black.sell_ch }}</span></span></div>
+          {% else %}<div class="msg">{{ black.error }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="bx fxb x-fx">
+        <div class="bx-t">NGOẠI TỆ · VIETCOMBANK<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% for f in fx %}
+          <div class="r"><span class="n">{{ f.code }} <small>{{ f.name }}</small></span><span class="v s">{{ f.buy }}</span><span class="v">{{ f.sell }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-col">
+      <div class="bx gold grow">
+        <div class="bx-t">VÀNG SJC <i>{{ unit_label }}</i>{% if gold.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% if gold.has %}
+          <div class="r"><span class="n">Miếng</span><span class="v s">{{ gold.bar.buy }}</span><span class="v">{{ gold.bar.sell }}</span></div>
+          {% if gold.ring %}<div class="r x-ring"><span class="n">Nhẫn</span><span class="v s">{{ gold.ring.buy }}</span><span class="v">{{ gold.ring.sell }}</span></div>{% endif %}
+          {% else %}<div class="msg">{{ gold.error }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="bx gold grow x-silver">
+        <div class="bx-t">BẠC <i>{{ unit_label }}</i><span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% for b in silver %}
+          <div class="r"><span class="n">{{ b.name }}{% if b.stale %} <span class="stale" style="border-color:#000">CŨ</span>{% endif %}</span>{% if b.has %}<span class="v s">{{ b.buy }}</span><span class="v">{{ b.sell }}</span>{% else %}<span class="v s" style="font-size:12px;width:auto">{{ b.error }}</span>{% endif %}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="bx wd x-world">
+        <div class="bx-t">THẾ GIỚI · USD/oz<span class="sp"></span><i>TradingView</i></div>
+        <div class="bx-b">
+          {% for w in world %}
+          <div class="r"><span class="n">{{ w.name }} <small>{{ w.short }}</small></span><span class="v">{{ w.price }}</span><span class="pc{% unless w.up %} dn{% endunless %}">{{ w.pct }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="fu x-fu">
+        <div class="t">XĂNG E10</div>
+        {% if fuel.has %}
+          <div class="p">{{ fuel.price }}<small> đ/lít</small></div>
+          <div class="c">{{ fuel.change }}</div>
+          {% if fuel.e5 %}<div class="e5 x-e5">· E5 {{ fuel.e5.price }} {{ fuel.e5.change }}</div>{% endif %}
+          <div class="sp"></div>
+          <div class="d">từ {{ fuel.since }}</div>
+        {% else %}<div class="d">{{ fuel.error }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if warn_count > 0 %}<div class="pb-warn">⚠ {{ warn }}</div>{% endif %}
+</div>
+{% endcapture %}

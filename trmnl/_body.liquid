@@ -1,0 +1,87 @@
+{% comment %} Bảng giá: USDT P2P, USD chợ đen, ngoại tệ, vàng SJC, bạc, thế giới, xăng {% endcomment %}
+<div class="pb">
+  <div class="pb-hd">
+    <div class="t">BẢNG GIÁ</div>
+    <div class="chip">Vàng/bạc: {{ unit_label }}</div>
+    <div class="sp"></div>
+    <div class="u">Cập nhật {{ updated }}</div>
+  </div>
+
+  <div class="pb-main">
+    <div class="pb-col">
+      <div class="bx grow">
+        <div class="bx-t">USDT P2P · {{ p2p.side }}<i class="x-lim">hạn mức &gt; {{ p2p.min }}</i>{% if p2p.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><i>Binance</i></div>
+        <div class="bx-b">
+          {% if p2p.has %}
+            {% for a in p2p.ads %}
+            <div class="r"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
+            {% endfor %}
+          {% else %}
+            <div class="msg">Chưa lấy được giá P2P<small>{{ p2p.error }}</small></div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bx blk">
+        <div class="bx-t">USD CHỢ ĐEN{% if black.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% if black.has %}
+          <div class="r"><span class="n">USD</span><span class="v">{{ black.buy }} <span class="c">{{ black.buy_ch }}</span></span><span class="v">{{ black.sell }} <span class="c">{{ black.sell_ch }}</span></span></div>
+          {% else %}<div class="msg">{{ black.error }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="bx fxb x-fx">
+        <div class="bx-t">NGOẠI TỆ · VIETCOMBANK<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% for f in fx %}
+          <div class="r"><span class="n">{{ f.code }} <small>{{ f.name }}</small></span><span class="v s">{{ f.buy }}</span><span class="v">{{ f.sell }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="pb-col">
+      <div class="bx gold grow">
+        <div class="bx-t">VÀNG SJC <i>{{ unit_label }}</i>{% if gold.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% if gold.has %}
+          <div class="r"><span class="n">Miếng</span><span class="v s">{{ gold.bar.buy }}</span><span class="v">{{ gold.bar.sell }}</span></div>
+          {% if gold.ring %}<div class="r x-ring"><span class="n">Nhẫn</span><span class="v s">{{ gold.ring.buy }}</span><span class="v">{{ gold.ring.sell }}</span></div>{% endif %}
+          {% else %}<div class="msg">{{ gold.error }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="bx gold grow x-silver">
+        <div class="bx-t">BẠC <i>{{ unit_label }}</i><span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+        <div class="bx-b">
+          {% for b in silver %}
+          <div class="r"><span class="n">{{ b.name }}{% if b.stale %} <span class="stale" style="border-color:#000">CŨ</span>{% endif %}</span>{% if b.has %}<span class="v s">{{ b.buy }}</span><span class="v">{{ b.sell }}</span>{% else %}<span class="v s" style="font-size:12px;width:auto">{{ b.error }}</span>{% endif %}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="bx wd x-world">
+        <div class="bx-t">THẾ GIỚI · USD/oz<span class="sp"></span><i>TradingView</i></div>
+        <div class="bx-b">
+          {% for w in world %}
+          <div class="r"><span class="n">{{ w.name }} <small>{{ w.short }}</small></span><span class="v">{{ w.price }}</span><span class="pc{% unless w.up %} dn{% endunless %}">{{ w.pct }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="fu x-fu">
+        <div class="t">XĂNG E10</div>
+        {% if fuel.has %}
+          <div class="p">{{ fuel.price }}<small> đ/lít</small></div>
+          <div class="c">{{ fuel.change }}</div>
+          {% if fuel.e5 %}<div class="e5 x-e5">· E5 {{ fuel.e5.price }} {{ fuel.e5.change }}</div>{% endif %}
+          <div class="sp"></div>
+          <div class="d">từ {{ fuel.since }}</div>
+        {% else %}<div class="d">{{ fuel.error }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if warn_count > 0 %}<div class="pb-warn">⚠ {{ warn }}</div>{% endif %}
+</div>

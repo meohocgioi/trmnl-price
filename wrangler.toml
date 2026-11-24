@@ -1,0 +1,21 @@
+name = "trmnl-price"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+# Mỗi 5 phút: làm mới các nguồn giá đến hạn (mỗi nguồn có chu kỳ riêng, xem src/store.js)
+[triggers]
+crons = ["*/5 * * * *"]
+
+# KV lưu giá gần nhất + cài đặt. id được GitHub Actions (scripts/ensure-kv.mjs) tự tìm/tạo khi deploy.
+[[kv_namespaces]]
+binding = "KV"
+id = "__KV_ID__"
+
+# Trình duyệt ảo của Cloudflare để đọc bảng giá bạc DOJI (trang chạy bằng JavaScript)
+[browser]
+binding = "BROWSER"
+
+[observability]
+enabled = true
