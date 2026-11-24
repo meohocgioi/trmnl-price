@@ -40,7 +40,9 @@ export default {
     if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY) {
       const only = url.searchParams.get('only');
       const r = await refresh(env, { force: true, only: only ? only.split(',') : undefined });
-      return json({ result: r.result, view: buildView(r.data, r.settings) });
+      const trace = await fetch('https://www.cloudflare.com/cdn-cgi/trace').then((x) => x.text()).catch((e) => String(e));
+      const where = trace.split('\n').filter((l) => /^(ip|colo|loc)=/.test(l)).join(' ');
+      return json({ where, result: r.result, view: buildView(r.data, r.settings) });
     }
 
     if (p === '/tg' && req.method === 'POST') return handleTelegram(req, env, ctx);
