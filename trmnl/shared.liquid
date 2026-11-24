@@ -7,20 +7,20 @@
   .bx.grow{flex:1 1 auto;}
   .bx-t{display:flex;align-items:center;gap:8px;background:#000;color:#fff;padding:3px 10px;font-size:13px;font-weight:900;letter-spacing:.8px;white-space:nowrap;}
   .bx-t .sp{flex:1;}
-  .bx-t i{font-style:normal;font-weight:700;font-size:11px;letter-spacing:0;}
+  .bx-t i{font-style:normal;font-weight:700;font-size:13px;letter-spacing:0;}
   .bx-b{flex:1;display:flex;flex-direction:column;justify-content:space-evenly;padding:2px 10px;}
   /* Lưới chung cho tiêu đề + các dòng: tên | Mua | Bán → chữ Mua/Bán thẳng cột với số */
   .g2 .bx-t,.g2 .r{display:grid;grid-template-columns:minmax(0,1fr) var(--cw) var(--cw);column-gap:10px;align-items:baseline;}
-  .g2 .bx-t .h{text-align:right;font-size:11px;font-weight:800;letter-spacing:.5px;}
+  .g2 .bx-t .h{text-align:right;font-size:13px;font-weight:800;letter-spacing:.5px;}
   .r{display:flex;align-items:baseline;gap:8px;white-space:nowrap;min-height:0;}
   .r + .r{border-top:1px dashed #999;}
   .r .n{min-width:0;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;}
-  .r .n small{font-weight:600;font-size:11px;}
+  .r .n small{font-weight:700;font-size:13px;}
   .r .v{text-align:right;font-size:var(--fs);font-weight:900;letter-spacing:-.3px;}
   .r .v.s{font-weight:700;}
-  .r .v .c{font-size:11px;font-weight:800;letter-spacing:0;margin-left:4px;}
+  .r .v .c{font-size:13px;font-weight:800;letter-spacing:0;margin-left:4px;}
   .msg{font-size:14px;font-weight:700;padding:6px 0;}
-  .msg small{display:block;font-weight:500;font-size:11px;}
+  .msg small{display:block;font-weight:600;font-size:13px;}
   /* P2P: hạng | tên | hạn mức | giá */
   .p2p .r{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto;column-gap:8px;}
   .p2p .rk{width:20px;height:20px;border-radius:50%;background:#000;color:#fff;font-size:12px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;align-self:center;}
@@ -30,28 +30,28 @@
   .p2p .bd-silver circle{fill:#888;stroke:#888;}
   .p2p .bd-bronze circle{fill:#fff;}.p2p .bd-bronze path{fill:#000;}
   .p2p .bd-merchant circle{fill:#fff;}.p2p .bd-merchant path{fill:#000;}
-  .p2p .lim{font-size:12px;font-weight:700;text-align:right;}
+  .p2p .lim{font-size:14px;font-weight:700;text-align:right;}
   .p2p .p2{font-size:24px;font-weight:900;letter-spacing:-.5px;text-align:right;min-width:96px;}
-  .p2p .sd{font-size:10px;font-weight:900;letter-spacing:1px;padding-top:2px;}
+  .p2p .sd{font-size:12px;font-weight:900;letter-spacing:1px;padding-top:2px;}
   .p2p.both .p2{font-size:19px;}.p2p.both .r .n{font-size:13px;}.p2p.both .rk{width:17px;height:17px;font-size:10px;}
-  .cmp{flex:none;display:flex;gap:14px;padding:2px 10px;border-top:1px solid #000;font-size:12px;white-space:nowrap;overflow:hidden;}
-  .cmp b{font-weight:800;}.cmp i{font-style:normal;font-weight:700;font-size:11px;}
+  .cmp{flex:none;display:flex;gap:14px;padding:2px 10px;border-top:1px solid #000;font-size:14px;white-space:nowrap;overflow:hidden;}
+  .cmp b{font-weight:800;}.cmp i{font-style:normal;font-weight:800;font-size:13px;}
   .chs{flex:none;display:flex;gap:10px;padding:3px 10px 4px;border-top:1px solid #000;}
   .ch{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:1px;}
-  .ch-h{display:flex;align-items:baseline;gap:6px;font-size:10px;font-weight:700;white-space:nowrap;}
-  .ch-h b{font-weight:900;letter-spacing:.5px;}.ch-h .sp{flex:1;}.ch-h .chg{font-size:11px;}
+  .ch-h{display:flex;align-items:baseline;gap:4px;font-size:12px;letter-spacing:-.3px;font-weight:700;white-space:nowrap;}
+  .ch-h b{font-weight:900;letter-spacing:0;}.ch-h .sp{flex:1;}.ch-h .chg{font-size:13px;}
   .ch-s{width:100%;height:42px;}
-  .ch-n{height:42px;display:flex;align-items:center;font-size:10px;font-style:italic;}
+  .ch-n{height:42px;display:flex;align-items:center;font-size:12px;font-weight:600;font-style:italic;}
   .gold{--cw:134px;--fs:17px;}
   .gold .r .v{letter-spacing:-.6px;}
   .gold .r .n{font-size:14px;}
   /* Dòng chênh lệch so với thế giới */
-  .gold .r.dr .n,.gold .r.dl .n{font-size:12px;line-height:1.1;overflow:visible;}
-  .gold .r.dr .n small,.gold .r.dl .n small{display:block;font-size:10px;font-weight:600;}
+  .gold .r.dr .n,.gold .r.dl .n{font-size:14px;line-height:1.1;overflow:visible;}
+  .gold .r.dr .n small,.gold .r.dl .n small{display:block;font-size:12px;font-weight:700;}
   .gold .r.dr .v{font-size:15px;}
   .gold .r.dl{grid-template-columns:minmax(0,1fr) auto;}
-  .gold .r.dl .dv{display:flex;gap:12px;justify-content:flex-end;font-size:12px;font-weight:700;}
-  .gold .r.dl .dv b{font-size:14px;font-weight:900;}
+  .gold .r.dl .dv{display:flex;gap:12px;justify-content:flex-end;font-size:14px;font-weight:700;}
+  .gold .r.dl .dv b{font-size:15px;font-weight:900;}
   .fxb{--cw:86px;}
   .blk{--cw:120px;}
   .wd .r{display:grid;grid-template-columns:minmax(0,1fr) auto 72px;column-gap:10px;}
@@ -61,18 +61,18 @@
   .fu{flex:none;display:flex;align-items:center;gap:10px;border:3px solid #000;border-radius:10px;overflow:hidden;height:42px;white-space:nowrap;}
   .fu .t{align-self:stretch;display:flex;align-items:center;background:#000;color:#fff;padding:0 10px;font-size:13px;font-weight:900;letter-spacing:.8px;}
   .fu .p{font-size:22px;font-weight:900;}
-  .fu .p small{font-size:12px;font-weight:700;}
+  .fu .p small{font-size:14px;font-weight:700;}
   .fu .c{font-size:13px;font-weight:900;}
   .fu .sp{flex:1;}
-  .fu .d{font-size:11px;font-weight:700;padding-right:10px;}
+  .fu .d{font-size:13px;font-weight:700;padding-right:10px;}
   .fu .e5{font-size:13px;font-weight:700;}
-  .stale{font-size:10px;font-weight:900;border:1px solid currentColor;border-radius:3px;padding:0 3px;}
-  .pb-warn{flex:none;font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid #000;padding-top:2px;}
+  .stale{font-size:12px;font-weight:900;border:1px solid currentColor;border-radius:3px;padding:0 3px;}
+  .pb-warn{flex:none;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid #000;padding-top:2px;}
 
   /* ===== Nửa ngang (800×240): P2P + USD | Vàng + bạc + thế giới ===== */
   .sz-hh .pb{padding:5px 8px;gap:4px;--gap:6px;--fs:16px;}
   .sz-hh .x-fx,.sz-hh .x-fu,.sz-hh .x-ring,.sz-hh .pb-warn,.sz-hh .x-lim,.sz-hh .x-chart,.sz-hh .x-buy{display:none;}
-  .sz-hh .cmp{font-size:10px;padding:0 8px;}
+  .sz-hh .cmp{font-size:11px;padding:0 8px;}.sz-hh .g2 .bx-t .h{font-size:11px;}.sz-hh .bx-t i{font-size:11px;}.sz-hh .r .v .c{font-size:11px;}.sz-hh .gold .r.dr .n,.sz-hh .gold .r.dl .n{font-size:12px;}.sz-hh .gold .r.dl .dv{font-size:11px;}
   .sz-hh .bx{border-width:2px;border-radius:7px;}.sz-hh .bx-t{padding:1px 8px;font-size:11px;}
   .sz-hh .bx-b{padding:1px 8px;}.sz-hh .r .n{font-size:12px;}.sz-hh .p2p .p2{font-size:18px;}
   .sz-hh .p2p .rk{width:16px;height:16px;font-size:10px;}
@@ -88,14 +88,16 @@
   .sz-hv .p2p .rk{width:16px;height:16px;font-size:10px;}
   .sz-hv .gold{--cw:124px;--fs:16px;}.sz-hv .blk{--cw:100px;}.sz-hv .wd .v{font-size:15px;}
   .sz-hv .fu{height:30px;border-width:2px;border-radius:8px;}.sz-hv .fu .t{font-size:11px;padding:0 7px;}.sz-hv .fu .p{font-size:17px;}.sz-hv .fu .d{display:none;}
-  .sz-hv .pb-warn{font-size:9px;}
+  .sz-hv .pb-warn{font-size:10px;}
+  .sz-hv .gold .r.dr .n small,.sz-hv .gold .r.dl .n small{display:none;}.sz-hv .gold .r.dr .n,.sz-hv .gold .r.dl .n{font-size:12px;}.sz-hv .gold .r.dl .dv{font-size:11px;}.sz-hv .gold .r.dl .dv b{font-size:13px;}
+  .sz-hv .ch-h{font-size:10px;}.sz-hv .ch-h .chg{font-size:11px;}.sz-hv .g2 .bx-t .h{font-size:11px;}.sz-hv .bx-t i{font-size:11px;}.sz-hv .r .v .c{font-size:11px;}
 
   /* ===== 1/4 (400×240): P2P + USD chợ đen + vàng miếng ===== */
   .sz-q .pb{padding:4px 6px;gap:3px;--gap:4px;--fs:14px;}
   .sz-q .pb-main{flex-direction:column;}
   .sz-q .x-fx,.sz-q .x-ring,.sz-q .x-lim,.sz-q .x-silver,.sz-q .x-world,.sz-q .x-fu,.sz-q .pb-warn,.sz-q .x-chart,.sz-q .x-cmp,.sz-q .x-buy{display:none;}
   .sz-q .bx{border-width:2px;border-radius:6px;}.sz-q .bx-t{padding:0 6px;font-size:10px;}
-  .sz-q .bx-b{padding:0 6px;}.sz-q .r .n{font-size:11px;}.sz-q .p2p .p2{font-size:15px;}
+  .sz-q .bx-b{padding:0 6px;}.sz-q .g2 .bx-t .h{font-size:10px;}.sz-q .bx-t i{font-size:10px;}.sz-q .r .v .c{font-size:10px;}.sz-q .r .n{font-size:11px;}.sz-q .p2p .p2{font-size:15px;}
   .sz-q .p2p .rk{width:14px;height:14px;font-size:9px;}
   .sz-q .gold{--cw:112px;--fs:14px;flex:0 0 auto;}.sz-q .gold .r.dr{display:none;}.sz-q .blk{--cw:86px;}
 </style>

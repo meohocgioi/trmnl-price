@@ -83,6 +83,45 @@ export async function p2p(env, { minLimit = 10_000_000, withBuy = false, count =
   return { minLimit, ads: sell, buy, via: post.via, sellTop: sell[0]?.price ?? null, buyTop: buy[0]?.price ?? null };
 }
 
+// ---------- 1b. Bybit P2P / OKX P2P (để đối chiếu; gọi thẳng được, không cần proxy) ----------
+// side: 'SELL' = bạn bán USDT (giá các quảng cáo mua vào), 'BUY' = bạn mua USDT
+const pickBest = (list, side, minLimit) => {
+  const ok = list.filter((x) => x.price > 0 && x.max > minLimit);
+  ok.sort((a, b) => (side === 'SELL' ? b.price - a.price : a.price - b.price));
+  return ok[0] || null;
+};
+
+export async function bybit({ side = 'SELL', minLimit = 10_000_000 } = {}) {
+  const one = async (sd) => {
+    const text = await get('https://api2.bybit.com/fiat/otc/item/online', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ tokenId: 'USDT', currencyId: 'VND', side: sd === 'SELL' ? '0' : '1', size: '30', page: '1', amount: '', payment: [], authMaker: false, canTrade: false }),
+    });
+    const j = JSON.parse(text);
+    if (j.ret_code !== 0) throw new Error(`Bybit: ${j.ret_msg || j.ret_code}`);
+    const list = (j.result?.items || []).map((x) => ({ name: x.nickName, price: Number(x.price), min: Number(x.minAmount), max: Number(x.maxAmount) }));
+    return pickBest(list, sd, minLimit);
+  };
+  const [sell, buy] = await Promise.all([one('SELL'), one('BUY').catch(() => null)]);
+  if (!sell && !buy) throw new Error('Bybit không có quảng cáo phù hợp');
+  return { sell, buy };
+}
+
+export async function okx({ minLimit = 10_000_000 } = {}) {
+  const one = async (sd) => {
+    // OKX: bạn bán USDT → xem lệnh "buy" của người khác; bạn mua → lệnh "sell"
+    const okSide = sd === 'SELL' ? 'buy' : 'sell';
+    const text = await get(`https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=VND&baseCurrency=USDT&side=${okSide}&paymentMethod=all&userType=all&showTrade=false&showFollow=false&showAlreadyTraded=false&isAbleFilter=false`);
+    const j = JSON.parse(text);
+    if (String(j.code) !== '0') throw new Error(`OKX: ${j.msg || j.code}`);
+    const list = (j.data?.[okSide] || []).map((x) => ({ name: x.nickName, price: Number(x.price), min: Number(x.quoteMinAmountPerOrder), max: Number(x.quoteMaxAmountPerOrder) }));
+    return pickBest(list, sd, minLimit);
+  };
+  const [sell, buy] = await Promise.all([one('SELL'), one('BUY').catch(() => null)]);
+  if (!sell && !buy) throw new Error('OKX không có quảng cáo phù hợp');
+  return { sell, buy };
+}
+
 const P2P_URL = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';
 
 // Chọn đường gọi Binance: thử lần lượt các proxy SOCKS5 (KV "proxies"), proxy nào chạy được thì dùng;
