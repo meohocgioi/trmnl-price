@@ -52,7 +52,7 @@ export default {
       const { socksFetch, getProxies, proxyId } = await import('./socks.js');
       const out = {};
       for (const px of await getProxies(env)) {
-        for (const t of ['https://ipinfo.io/json', 'https://www.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', 'https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search']) {
+        for (const t of ['http://ipinfo.io/json', 'https://ipinfo.io/json', 'https://www.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', 'https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search']) {
           const post = t.includes('bapi');
           try {
             const r = await socksFetch(px, t, post ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: { fiat: 'VND', page: 1, rows: 1, tradeType: 'SELL', asset: 'USDT' } } : {});

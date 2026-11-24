@@ -81,7 +81,7 @@ async function doFetch(proxy, url, { method, headers, body }) {
 function parseHttp(raw) {
   let i = 0;
   for (; i < raw.length - 3; i++) if (raw[i] === 13 && raw[i + 1] === 10 && raw[i + 2] === 13 && raw[i + 3] === 10) break;
-  if (i >= raw.length - 3) throw new Error('Phản hồi HTTP không hợp lệ');
+  if (i >= raw.length - 3) throw new Error(`Phản hồi HTTP không hợp lệ (${raw.length} byte: ${dec.decode(raw.slice(0, 80)).replace(/[^\x20-\x7e]/g, '.')})`);
   const lines = dec.decode(raw.slice(0, i)).split('\r\n');
   const status = Number(lines[0].split(' ')[1]) || 0;
   const headers = {};
