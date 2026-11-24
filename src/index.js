@@ -48,6 +48,20 @@ export default {
     }
 
     // Kiểm tra nhanh (chỉ bật khi có biến DEBUG_KEY — bản deploy bình thường không có)
+    if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('pt')) {
+      const { socksFetch, getProxies, proxyId } = await import('./socks.js');
+      const list = await getProxies(env);
+      const out = {};
+      await Promise.all(list.map(async (px) => {
+        const t0 = Date.now();
+        try {
+          const r = await socksFetch(px, 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: { fiat: 'VND', page: 1, rows: 1, tradeType: 'SELL', asset: 'USDT', payTypes: [], countries: [] } });
+          let code = '?'; try { code = JSON.parse(r.text).code; } catch {}
+          out[proxyId(px)] = `HTTP ${r.status} · Binance code ${code} · ${Date.now() - t0}ms`;
+        } catch (e) { out[proxyId(px)] = 'ERR ' + e.message + ` · ${Date.now() - t0}ms`; }
+      }));
+      return json(out);
+    }
     if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('sx')) {
       const { connect } = await import('cloudflare:sockets');
       const { getProxies } = await import('./socks.js');
