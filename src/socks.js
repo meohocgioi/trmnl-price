@@ -1,6 +1,10 @@
 // Gọi HTTPS qua proxy SOCKS5 (có user/pass) bằng TCP socket của Cloudflare Workers.
 // Dùng cho Binance P2P vì Binance chặn địa chỉ IP của Cloudflare (đăng ký ở Mỹ).
 import { connect } from 'cloudflare:sockets';
+import { startTls, TrustedCert } from 'subtls';
+import { ROOTS } from './roots.js';
+
+let rootsDb = null; // phân tích chứng chỉ gốc 1 lần cho mỗi lần Worker khởi động
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -17,6 +21,8 @@ class Reader {
     }
   }
   async take(n) { await this.fill(n); const out = this.buf.slice(0, n); this.buf = this.buf.slice(n); return out; }
+  // như take nhưng trả undefined khi hết dữ liệu (cho subtls)
+  async takeOrEnd(n) { try { return await this.take(n); } catch { return undefined; } }
   release() { this.r.releaseLock(); }
 }
 
@@ -30,8 +36,8 @@ export async function socksFetch(proxy, url, { method = 'GET', headers = {}, bod
 
 async function doFetch(proxy, url, { method, headers, body }) {
   const u = new URL(url);
-  const port = Number(u.port) || 443;
-  const sock = connect({ hostname: proxy.host, port: Number(proxy.port) }, { secureTransport: 'starttls' });
+  const port = Number(u.port) || (u.protocol === 'http:' ? 80 : 443);
+  const sock = connect({ hostname: proxy.host, port: Number(proxy.port) });
   try {
     const w = sock.writable.getWriter();
     const rd = new Reader(sock.readable);
@@ -55,27 +61,43 @@ async function doFetch(proxy, url, { method, headers, body }) {
     if (h[3] === 1) await rd.take(6);
     else if (h[3] === 4) await rd.take(18);
     else if (h[3] === 3) { const l = (await rd.take(1))[0]; await rd.take(l + 2); }
-    w.releaseLock(); rd.release();
-
-    // 3. Bật TLS tới máy chủ đích rồi gửi HTTP/1.1
-    const tls = u.protocol === 'https:' ? sock.startTls({ expectedServerHostname: u.hostname }) : sock;
-    const tw = tls.writable.getWriter();
+    // 3. TLS chạy bằng JavaScript (subtls) ngay trên đường hầm SOCKS — startTls() của Cloudflare không chạy được qua proxy
     const bodyBytes = body == null ? null : enc.encode(typeof body === 'string' ? body : JSON.stringify(body));
     const hdr = {
       Host: u.hostname, Connection: 'close', 'Accept-Encoding': 'identity', Accept: '*/*', ...headers,
       ...(bodyBytes ? { 'Content-Length': String(bodyBytes.length) } : {}),
     };
     const head = `${method} ${u.pathname}${u.search} HTTP/1.1\r\n` + Object.entries(hdr).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n\r\n';
-    await tw.write(enc.encode(head));
-    if (bodyBytes) await tw.write(bodyBytes);
-    tw.releaseLock();
-
-    // 4. Đọc hết phản hồi (máy chủ đóng kết nối vì Connection: close)
-    const raw = await readAll(tls.readable);
+    const reqBytes = bodyBytes ? concat([enc.encode(head), bodyBytes]) : enc.encode(head);
+    let raw;
+    if (u.protocol === 'https:') {
+      rootsDb ??= await TrustedCert.databaseFromPEM(ROOTS);
+      const tls = await startTls(u.hostname, rootsDb, (n) => rd.takeOrEnd(n), (d) => w.write(d));
+      await tls.write(reqBytes);
+      const parts = [];
+      for (;;) {
+        let chunk;
+        try { chunk = await tls.read(); } catch (e) { if (parts.length) break; throw e; }
+        if (!chunk) break;
+        parts.push(chunk);
+      }
+      raw = concat(parts);
+    } else {
+      await w.write(reqBytes);
+      const parts = [rd.buf];
+      for (;;) { const { value, done } = await rd.r.read(); if (done) break; parts.push(value); }
+      raw = concat(parts);
+    }
     return parseHttp(raw);
   } finally {
     sock.close().catch(() => {});
   }
+}
+
+function concat(parts) {
+  const out = new Uint8Array(parts.reduce((s, x) => s + x.length, 0));
+  let o = 0; for (const x of parts) { out.set(x, o); o += x.length; }
+  return out;
 }
 
 async function readAll(readable) {
