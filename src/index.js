@@ -48,6 +48,20 @@ export default {
     }
 
     // Kiểm tra nhanh (chỉ bật khi có biến DEBUG_KEY — bản deploy bình thường không có)
+    if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('px')) {
+      const { socksFetch, getProxies, proxyId } = await import('./socks.js');
+      const out = {};
+      for (const px of await getProxies(env)) {
+        for (const t of ['https://ipinfo.io/json', 'https://www.binance.com/bapi/c2c/v2/friendly/c2c/adv/search', 'https://c2c.binance.com/bapi/c2c/v2/friendly/c2c/adv/search']) {
+          const post = t.includes('bapi');
+          try {
+            const r = await socksFetch(px, t, post ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: { fiat: 'VND', page: 1, rows: 1, tradeType: 'SELL', asset: 'USDT' } } : {});
+            out[proxyId(px) + ' ' + t] = r.status + ' ' + r.text.slice(0, 160).replace(/\s+/g, ' ');
+          } catch (e) { out[proxyId(px) + ' ' + t] = 'ERR ' + e.message; }
+        }
+      }
+      return json(out);
+    }
     if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY) {
       const only = url.searchParams.get('only');
       const r = await refresh(env, { force: true, only: only ? only.split(',') : undefined });
