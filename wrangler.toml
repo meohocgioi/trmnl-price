@@ -17,5 +17,11 @@ id = "__KV_ID__"
 [browser]
 binding = "BROWSER"
 
+# Markup TRMNL nhúng vào Worker dạng chữ (dùng cho /preview)
+[[rules]]
+type = "Text"
+globs = ["**/*.liquid"]
+fallthrough = true
+
 [observability]
 enabled = true

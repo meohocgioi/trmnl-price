@@ -3,7 +3,7 @@ import { refresh, readAll, SOURCES } from './store.js';
 import { buildView } from './view.js';
 import { getSettings, saveSettings, DEFAULT_SETTINGS, P2P_MINS } from './settings.js';
 import { checkUpdate } from './updater.js';
-import { trmnlPreview } from './trmnl.js';
+import { localPreview } from './preview.js';
 import { esc, stamp } from './util.js';
 import { short } from './view.js';
 import { parseProxy, getProxies, saveProxies, proxyId } from './socks.js';
@@ -211,23 +211,21 @@ async function doRefresh(env, chatId, msgId) {
 }
 
 async function doPreview(env, chatId, all) {
-  if (!env.TRMNL_MCP_KEY) {
-    return sendMsg(env, chatId, '⚠️ Chưa có secret <code>TRMNL_MCP_KEY</code> (MCP API key của plugin trên TRMNL).\nThêm vào GitHub Secrets rồi bấm /update.');
-  }
-  const wait = await sendMsg(env, chatId, '⏳ Đang nhờ TRMNL render màn hình với dữ liệu hiện tại… (~15–30 giây)');
+  const wait = await sendMsg(env, chatId, '⏳ Đang dựng ảnh màn hình TRMNL với giá hiện tại… (~10–20 giây)');
   const views = all ? ['markup_full', 'markup_half_horizontal', 'markup_half_vertical', 'markup_quadrant'] : ['markup_full'];
   try {
-    const imgs = await trmnlPreview(env, views);
+    const v = buildView(await readAll(env), await getSettings(env));
+    const imgs = await localPreview(env, v, views);
     for (let i = 0; i < imgs.length; i++) {
       const im = imgs[i];
       const cap = i === 0
-        ? `🖼 <b>Preview TRMNL</b> · ${VIEW_NAME[im.view] || im.view}\n<i>Đúng như màn hình sẽ hiện ở lần TRMNL refresh tới.</i>`
+        ? `🖼 <b>Preview TRMNL</b> · ${VIEW_NAME[im.view] || im.view}\n<i>Giá lúc ${v.updated_full}. TRMNL hiện giống vậy ở lần refresh tới (≤ 15 phút).</i>`
         : `🖼 ${VIEW_NAME[im.view] || im.view}`;
       await sendPhotoBytes(env, chatId, im.bytes, im.type, cap, i === imgs.length - 1 ? MAIN_KB : undefined);
     }
     if (wait?.result?.message_id) await tg(env, 'deleteMessage', { chat_id: chatId, message_id: wait.result.message_id });
   } catch (e) {
-    await editOrSend(env, chatId, wait?.result?.message_id, `❌ Không lấy được preview.\n<code>${esc(e.message).slice(0, 500)}</code>`, MAIN_KB);
+    await editOrSend(env, chatId, wait?.result?.message_id, `❌ Không dựng được preview.\n<code>${esc(e.message).slice(0, 500)}</code>`, MAIN_KB);
   }
 }
 

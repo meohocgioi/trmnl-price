@@ -48,6 +48,14 @@ export default {
     }
 
     // Kiểm tra nhanh (chỉ bật khi có biến DEBUG_KEY — bản deploy bình thường không có)
+    if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('pv')) {
+      const { renderHtml, localPreview } = await import('./preview.js');
+      const v = await screen(env);
+      const out = {};
+      try { out.htmlLen = (await renderHtml('markup_full', v)).length; } catch (e) { out.html = 'ERR ' + e.message; }
+      try { const im = await localPreview(env, v, ['markup_full', 'markup_quadrant']); out.png = im.map((x) => x.view + ':' + x.bytes.length); } catch (e) { out.png = 'ERR ' + e.message; }
+      return json(out);
+    }
     if (p === '/debug' && env.DEBUG_KEY && url.searchParams.get('k') === env.DEBUG_KEY && url.searchParams.get('pt')) {
       const { socksFetch, getProxies, proxyId } = await import('./socks.js');
       const list = await getProxies(env);
