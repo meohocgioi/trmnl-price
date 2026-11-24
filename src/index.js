@@ -55,18 +55,26 @@ export default {
       const log = [];
       const enc = new TextEncoder(), dec = new TextDecoder();
       try {
-        const sock = connect({ hostname: px.host, port: Number(px.port) });
+        const mode = url.searchParams.get('m') || 'plain';
+        const sock = connect({ hostname: px.host, port: Number(px.port) }, mode === 'plain' ? undefined : { secureTransport: 'starttls' });
         sock.closed.then(() => log.push('closed ok'), (e) => log.push('closed err ' + e));
         await sock.opened.then((i) => log.push('opened ' + JSON.stringify(i))).catch((e) => log.push('open err ' + e));
-        const w = sock.writable.getWriter(); const r = sock.readable.getReader();
+        let w = sock.writable.getWriter(); let r = sock.readable.getReader();
         let buf = new Uint8Array(0);
         const need = async (n) => { while (buf.length < n) { const { value, done } = await r.read(); if (done) throw new Error('done@' + buf.length); const b = new Uint8Array(buf.length + value.length); b.set(buf); b.set(value, buf.length); buf = b; } const o = buf.slice(0, n); buf = buf.slice(n); return o; };
         await w.write(new Uint8Array([5, 2, 0, 2])); const g = await need(2); log.push('greet ' + g.join(','));
         const us = enc.encode(px.user), ps = enc.encode(px.pass);
         await w.write(new Uint8Array([1, us.length, ...us, ps.length, ...ps])); log.push('auth ' + (await need(2)).join(','));
         const host = url.searchParams.get('h') || 'ipinfo.io'; const hb = enc.encode(host);
-        await w.write(new Uint8Array([5, 1, 0, 3, hb.length, ...hb, 0, 80])); const h = await need(4); log.push('connect ' + h.join(','));
+        const tlsOn = mode === 'tls';
+        await w.write(new Uint8Array([5, 1, 0, 3, hb.length, ...hb, tlsOn ? 1 : 0, tlsOn ? 187 : 80])); const h = await need(4); log.push('connect ' + h.join(','));
         if (h[3] === 1) await need(6); else if (h[3] === 4) await need(18); else if (h[3] === 3) { const l = (await need(1))[0]; await need(l + 2); }
+        if (mode === 'release' || tlsOn) {
+          w.releaseLock(); r.releaseLock(); log.push('released, leftover ' + buf.length);
+          const s2 = tlsOn ? sock.startTls({ expectedServerHostname: host }) : sock;
+          if (tlsOn) await s2.opened.then((i) => log.push('tls opened ' + JSON.stringify(i))).catch((e) => log.push('tls open err ' + e));
+          w = s2.writable.getWriter(); r = s2.readable.getReader();
+        }
         await w.write(enc.encode(`GET / HTTP/1.1\r\nHost: ${host}\r\nConnection: close\r\nUser-Agent: curl/8\r\n\r\n`)); log.push('sent');
         const t0 = Date.now(); let got = buf.length, first = dec.decode(buf);
         for (;;) { const x = await Promise.race([r.read(), new Promise((res) => setTimeout(() => res({ timeout: true }), 8000))]); if (x.timeout) { log.push('read timeout'); break; } if (x.done) { log.push('read done after ' + (Date.now() - t0) + 'ms'); break; } got += x.value.length; if (first.length < 200) first += dec.decode(x.value); }
