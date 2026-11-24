@@ -17,5 +17,9 @@ id = "__KV_ID__"
 [browser]
 binding = "BROWSER"
 
+# Chạy Worker ở Singapore: Binance P2P chặn máy chủ đặt ở Mỹ
+[placement]
+region = "aws:ap-southeast-1"
+
 [observability]
 enabled = true
