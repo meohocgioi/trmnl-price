@@ -8,7 +8,7 @@ const vnHour = (ms) => new Date(ms + 7 * 3600000).getUTCHours() + new Date(ms).g
 
 // every: chu kỳ làm mới (ms). heavy: dùng Browser Rendering (tốn giờ trình duyệt → thưa hơn ban đêm)
 export const SOURCES = {
-  p2p:    { every: 5 * MIN,  label: 'Binance P2P', run: (env, s) => S.p2p(env, { side: s.p2pSide, minLimit: s.p2pMin }) },
+  p2p:    { every: 5 * MIN,  label: 'Binance P2P', run: (env, s) => S.p2p(env, { minLimit: s.p2pMin, withBuy: !!s.showBuy }) },
   bybit:  { every: 5 * MIN,  label: 'Bybit P2P', run: (env, s) => S.bybit({ minLimit: s.p2pMin }) },
   okx:    { every: 5 * MIN,  label: 'OKX P2P', run: (env, s) => S.okx({ minLimit: s.p2pMin }) },
   black:  { every: 15 * MIN, label: 'USD chợ đen', run: () => S.blackUsd() },
@@ -46,7 +46,7 @@ export async function readAll(env) {
 }
 
 // Tham số P2P đổi (Mua/Bán, hạn mức) → số liệu cũ không còn đúng
-const p2pParams = (s) => `${s.p2pSide}|${s.p2pMin}`;
+const p2pParams = (s) => `${s.p2pMin}|${s.showBuy ? 1 : 0}`;
 
 function due(k, rec, s, now, force) {
   if (force) return true;

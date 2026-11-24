@@ -1,55 +1,62 @@
 {% comment %} Bảng giá: USDT P2P, USD chợ đen, ngoại tệ, vàng SJC, bạc, thế giới, xăng {% endcomment %}
 <div class="pb">
-  <div class="pb-hd">
-    <div class="t">BẢNG GIÁ</div>
-    <div class="chip">Vàng/bạc: {{ unit_label }}</div>
-    <div class="sp"></div>
-    <div class="u">Cập nhật {{ updated }}</div>
-  </div>
-
   <div class="pb-main">
     <div class="pb-col">
-      <div class="bx grow">
-        <div class="bx-t">USDT P2P · {{ p2p.side }}<i class="x-lim">hạn mức &gt; {{ p2p.min }}</i>{% if p2p.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><i>Binance</i></div>
+      <div class="bx grow p2p{% if p2p.show_buy %} both{% endif %}">
+        <div class="bx-t">USDT P2P · BINANCE{% if p2p.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><i>cập nhật {{ updated }}</i></div>
         <div class="bx-b">
           {% if p2p.has %}
+            {% if p2p.show_buy %}<div class="sd x-buy">GIÁ BÁN</div>{% endif %}
             {% for a in p2p.ads %}
             <div class="r"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
             {% endfor %}
+            {% if p2p.show_buy %}
+            <div class="sd x-buy">GIÁ MUA</div>
+            {% if p2p.buy_has %}
+            {% for a in p2p.buy %}
+            <div class="r x-buy"><span class="rk">{{ a.rank }}</span><span class="n">{{ a.name }}</span><span class="lim x-lim">{{ a.limit }}</span><span class="p2">{{ a.price }}</span></div>
+            {% endfor %}
+            {% else %}<div class="msg x-buy">Chưa có giá mua</div>{% endif %}
+            {% endif %}
           {% else %}
             <div class="msg">Chưa lấy được giá P2P<small>{{ p2p.error }}</small></div>
           {% endif %}
         </div>
         {% if p2p.cmp_count > 0 %}
         <div class="cmp x-cmp">
-          {% for c in p2p.cmp %}<span class="ci"><b>{{ c.name }}</b> {{ c.price }}{% if c.diff != "" %} <i>{{ c.diff }}</i>{% endif %}{% if c.note != "" %} <i>{{ c.note }}</i>{% endif %}</span>{% endfor %}
+          {% for c in p2p.cmp %}<span><b>{{ c.name }}</b> {% if c.buy %}bán {{ c.sell.price }} · mua {{ c.buy.price }}{% else %}{{ c.sell.price }}{% if c.sell.diff != "" %} <i>{{ c.sell.diff }}</i>{% endif %}{% endif %}{% if c.note != "" %} <i>{{ c.note }}</i>{% endif %}</span>{% endfor %}
         </div>
         {% endif %}
-        {% if p2p.chart.show %}
-        <div class="ch x-chart">
-          {% if p2p.chart.has %}
-          <div class="ch-l"><span>{{ p2p.chart.max }}</span><span>{{ p2p.chart.min }}</span></div>
-          <svg viewBox="0 0 300 60" preserveAspectRatio="none" class="ch-s">
-            {% for t in p2p.chart.ticks %}<line x1="{{ t }}" y1="0" x2="{{ t }}" y2="60" stroke="#999" stroke-width="0.6" stroke-dasharray="2,2" vector-effect="non-scaling-stroke"/>{% endfor %}
-            <polyline points="{{ p2p.chart.points }}" fill="none" stroke="#000" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-          </svg>
-          <div class="ch-r">{% if p2p.chart.partial %}{{ p2p.chart.days }}/7 ngày{% else %}7 ngày{% endif %}<b>{{ p2p.chart.change }}</b></div>
-          {% else %}<div class="ch-n">{{ p2p.chart.note }}</div>{% endif %}
+        {% if p2p.chart_show %}
+        <div class="chs x-chart">
+          {% assign charts = "c24,c7" | split: "," %}
+          {% for k in charts %}
+          {% if k == "c24" %}{% assign c = p2p.c24 %}{% else %}{% assign c = p2p.c7 %}{% endif %}
+          <div class="ch">
+            <div class="ch-h"><b>{{ c.label }}</b>{% if c.has %}<span>{{ c.lo }}–{{ c.hi }}</span><span class="sp"></span><b class="chg">{{ c.change }}</b>{% endif %}</div>
+            {% if c.has %}
+            <svg viewBox="0 0 300 60" preserveAspectRatio="none" class="ch-s">
+              {% for t in c.ticks %}<line x1="{{ t }}" y1="0" x2="{{ t }}" y2="60" stroke="#999" stroke-width="1" stroke-dasharray="2,3" vector-effect="non-scaling-stroke"/>{% endfor %}
+              <polyline points="{{ c.points }}" fill="none" stroke="#000" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+            {% else %}<div class="ch-n">{{ c.note }}</div>{% endif %}
+          </div>
+          {% endfor %}
         </div>
         {% endif %}
       </div>
 
-      <div class="bx blk">
-        <div class="bx-t">USD CHỢ ĐEN{% if black.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+      <div class="bx blk g2">
+        <div class="bx-t"><span>USD CHỢ ĐEN{% if black.stale %} <span class="stale">CŨ</span>{% endif %}</span><span class="h">Mua</span><span class="h">Bán</span></div>
         <div class="bx-b">
           {% if black.has %}
-          <div class="r"><span class="n">USD</span><span class="v">{{ black.buy }} <span class="c">{{ black.buy_ch }}</span></span><span class="v">{{ black.sell }} <span class="c">{{ black.sell_ch }}</span></span></div>
+          <div class="r"><span class="n">USD</span><span class="v"><span class="c">{{ black.buy_ch }}</span>{{ black.buy }}</span><span class="v"><span class="c">{{ black.sell_ch }}</span>{{ black.sell }}</span></div>
           {% else %}<div class="msg">{{ black.error }}</div>{% endif %}
         </div>
       </div>
 
-      <div class="bx fxb x-fx">
-        <div class="bx-t">NGOẠI TỆ · VIETCOMBANK<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+      <div class="bx fxb g2 x-fx">
+        <div class="bx-t"><span>NGOẠI TỆ · VIETCOMBANK</span><span class="h">Mua</span><span class="h">Bán</span></div>
         <div class="bx-b">
           {% for f in fx %}
           <div class="r"><span class="n">{{ f.code }} <small>{{ f.name }}</small></span><span class="v s">{{ f.buy }}</span><span class="v">{{ f.sell }}</span></div>
@@ -59,8 +66,8 @@
     </div>
 
     <div class="pb-col">
-      <div class="bx gold grow">
-        <div class="bx-t">VÀNG SJC <i>{{ unit_label }}</i>{% if gold.stale %}<span class="stale">CŨ</span>{% endif %}<span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+      <div class="bx gold g2 grow">
+        <div class="bx-t"><span>VÀNG SJC <i>{{ unit_label }}</i>{% if gold.stale %} <span class="stale">CŨ</span>{% endif %}</span><span class="h">Mua</span><span class="h">Bán</span></div>
         <div class="bx-b">
           {% if gold.has %}
           <div class="r"><span class="n">Miếng</span><span class="v s">{{ gold.bar.buy }}</span><span class="v">{{ gold.bar.sell }}</span></div>
@@ -69,11 +76,11 @@
         </div>
       </div>
 
-      <div class="bx gold grow x-silver">
-        <div class="bx-t">BẠC <i>{{ unit_label }}</i><span class="sp"></span><span class="h">Mua</span><span class="h">Bán</span></div>
+      <div class="bx gold g2 grow x-silver">
+        <div class="bx-t"><span>BẠC <i>{{ unit_label }}</i></span><span class="h">Mua</span><span class="h">Bán</span></div>
         <div class="bx-b">
           {% for b in silver %}
-          <div class="r"><span class="n">{{ b.name }}{% if b.stale %} <span class="stale" style="border-color:#000">CŨ</span>{% endif %}</span>{% if b.has %}<span class="v s">{{ b.buy }}</span><span class="v">{{ b.sell }}</span>{% else %}<span class="v s" style="font-size:12px;width:auto">{{ b.error }}</span>{% endif %}</div>
+          <div class="r"><span class="n">{{ b.name }}{% if b.stale %} <span class="stale">CŨ</span>{% endif %}</span>{% if b.has %}<span class="v s">{{ b.buy }}</span><span class="v">{{ b.sell }}</span>{% else %}<span class="v s" style="font-size:12px;">{{ b.error }}</span><span></span>{% endif %}</div>
           {% endfor %}
         </div>
       </div>

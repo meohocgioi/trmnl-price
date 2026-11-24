@@ -47,82 +47,39 @@ const findRow = (rs, re) => rs.find((r) => re.test(r[0]));
 
 // ---------- 1. Binance P2P ----------
 // side: 'SELL' = tab Bán (giá bạn bán USDT được), 'BUY' = tab Mua
-export async function p2p(env, { side = 'SELL', minLimit = 10_000_000, count = 3 } = {}) {
-  const body = {
-    fiat: 'VND', page: 1, rows: 20, tradeType: side, asset: 'USDT', countries: [],
+export async function p2p(env, { minLimit = 10_000_000, withBuy = false, count = 3 } = {}) {
+  const base = {
+    fiat: 'VND', page: 1, rows: 20, asset: 'USDT', countries: [],
     proMerchantAds: false, shieldMerchantAds: false, filterType: 'all', periods: [],
     additionalKycVerifyFilter: 0, publisherType: null, payTypes: [], classifies: ['mass', 'profession', 'fiat_trade'],
   };
   const post = await p2pTransport(env);
-  const all = [];
-  for (let page = 1; page <= 3 && all.length < 60; page++) {
-    const text = await post(JSON.stringify({ ...body, page }));
-    let j;
-    try { j = JSON.parse(text); } catch { throw new Error('Binance trả về dữ liệu lạ'); }
-    if (j.code !== '000000') throw new Error(`Binance: ${j.message || j.code}`);
-    const d = j.data || [];
-    all.push(...d);
-    // đủ 3 quảng cáo hợp lệ thì thôi
-    const ok = all.filter((x) => valid(x, minLimit));
-    if (ok.length >= count || d.length < 20) break;
-  }
-  const ads = all.filter((x) => valid(x, minLimit)).slice(0, count).map((x) => ({
-    name: x.advertiser?.nickName || '?',
-    price: Number(x.adv.price),
-    min: Number(x.adv.minSingleTransAmount),
-    max: Number(x.adv.dynamicMaxSingleTransAmount || x.adv.maxSingleTransAmount),
-    orders: x.advertiser?.monthOrderCount ?? null,
-    rate: x.advertiser?.monthFinishRate != null ? Math.round(x.advertiser.monthFinishRate * 1000) / 10 : null,
-  }));
-  // Giá tốt nhất của chiều còn lại (để vẽ biểu đồ cả Mua lẫn Bán)
-  let other = null;
-  try {
-    const os = side === 'SELL' ? 'BUY' : 'SELL';
-    const j = JSON.parse(await post(JSON.stringify({ ...body, tradeType: os, page: 1 })));
-    const best = (j.data || []).find((x) => valid(x, minLimit));
-    if (best) other = Number(best.adv.price);
-  } catch {}
-  const top = ads[0]?.price ?? null;
-  return { side, minLimit, ads, via: post.via, sellTop: side === 'SELL' ? top : other, buyTop: side === 'BUY' ? top : other };
-}
-
-// ---------- 1b. Bybit P2P / OKX P2P (để đối chiếu; gọi thẳng được, không cần proxy) ----------
-// side: 'SELL' = bạn bán USDT (giá các quảng cáo mua vào), 'BUY' = bạn mua USDT
-const pickBest = (list, side, minLimit) => {
-  const ok = list.filter((x) => x.price > 0 && x.max > minLimit);
-  ok.sort((a, b) => (side === 'SELL' ? b.price - a.price : a.price - b.price));
-  return ok[0] || null;
-};
-
-export async function bybit({ side = 'SELL', minLimit = 10_000_000 } = {}) {
-  const one = async (sd) => {
-    const text = await get('https://api2.bybit.com/fiat/otc/item/online', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ tokenId: 'USDT', currencyId: 'VND', side: sd === 'SELL' ? '0' : '1', size: '30', page: '1', amount: '', payment: [], authMaker: false, canTrade: false }),
-    });
-    const j = JSON.parse(text);
-    if (j.ret_code !== 0) throw new Error(`Bybit: ${j.ret_msg || j.ret_code}`);
-    const list = (j.result?.items || []).map((x) => ({ name: x.nickName, price: Number(x.price), min: Number(x.minAmount), max: Number(x.maxAmount) }));
-    return pickBest(list, sd, minLimit);
+  // Lấy tối đa 3 trang cho tới khi đủ `want` quảng cáo hợp lệ
+  const side = async (tradeType, want) => {
+    const all = [];
+    for (let page = 1; page <= 3; page++) {
+      const text = await post(JSON.stringify({ ...base, tradeType, page }));
+      let j;
+      try { j = JSON.parse(text); } catch { throw new Error('Binance trả về dữ liệu lạ'); }
+      if (j.code !== '000000') throw new Error(`Binance: ${j.message || j.code}`);
+      const d = j.data || [];
+      all.push(...d);
+      if (all.filter((x) => valid(x, minLimit)).length >= want || d.length < 20) break;
+    }
+    return all.filter((x) => valid(x, minLimit)).slice(0, want).map((x) => ({
+      name: x.advertiser?.nickName || '?',
+      price: Number(x.adv.price),
+      min: Number(x.adv.minSingleTransAmount),
+      max: Number(x.adv.dynamicMaxSingleTransAmount || x.adv.maxSingleTransAmount),
+      orders: x.advertiser?.monthOrderCount ?? null,
+      rate: x.advertiser?.monthFinishRate != null ? Math.round(x.advertiser.monthFinishRate * 1000) / 10 : null,
+    }));
   };
-  const [sell, buy] = await Promise.all([one('SELL'), one('BUY').catch(() => null)]);
-  if (!sell && !buy) throw new Error('Bybit không có quảng cáo phù hợp');
-  return { sell, buy };
-}
-
-export async function okx({ minLimit = 10_000_000 } = {}) {
-  const one = async (sd) => {
-    // OKX: bạn bán USDT → xem lệnh "buy" của người khác; bạn mua → lệnh "sell"
-    const okSide = sd === 'SELL' ? 'buy' : 'sell';
-    const text = await get(`https://www.okx.com/v3/c2c/tradingOrders/books?quoteCurrency=VND&baseCurrency=USDT&side=${okSide}&paymentMethod=all&userType=all&showTrade=false&showFollow=false&showAlreadyTraded=false&isAbleFilter=false`);
-    const j = JSON.parse(text);
-    if (String(j.code) !== '0') throw new Error(`OKX: ${j.msg || j.code}`);
-    const list = (j.data?.[okSide] || []).map((x) => ({ name: x.nickName, price: Number(x.price), min: Number(x.quoteMinAmountPerOrder), max: Number(x.quoteMaxAmountPerOrder) }));
-    return pickBest(list, sd, minLimit);
-  };
-  const [sell, buy] = await Promise.all([one('SELL'), one('BUY').catch(() => null)]);
-  if (!sell && !buy) throw new Error('OKX không có quảng cáo phù hợp');
-  return { sell, buy };
+  const sell = await side('SELL', count);
+  // chiều Mua: đủ 3 dòng khi bật hiện giá mua, không thì chỉ cần giá tốt nhất cho biểu đồ
+  let buy = [];
+  try { buy = await side('BUY', withBuy ? count : 1); } catch (e) { if (withBuy) throw e; }
+  return { minLimit, ads: sell, buy, via: post.via, sellTop: sell[0]?.price ?? null, buyTop: buy[0]?.price ?? null };
 }
 
 const P2P_URL = 'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search';

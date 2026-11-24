@@ -22,7 +22,6 @@ export function short(n) {
 const signed = (n, fmt = vnd) => (n == null ? '' : (n > 0 ? '+' : n < 0 ? '−' : '±') + fmt(Math.abs(n)));
 const usd = (n, d = 2) => Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 
-export const SIDE_LABEL = { SELL: 'BÁN', BUY: 'MUA' };
 
 function age(rec, now) {
   if (!rec?.at) return null;
@@ -43,37 +42,40 @@ export function buildView(all, s, now = Date.now()) {
   const unit = s.unit === 10 ? 10 : 1;
   const u = (n) => (n == null ? null : n * unit);
 
-  // 1. P2P
+  // 1. P2P Binance: luôn hiện giá Bán; giá Mua khi bật trong /setting
   const P = st('p2p');
+  const adRow = (a, i) => ({ rank: i + 1, name: a.name, price: vnd(a.price), limit: `${short(a.min)}–${short(a.max)}` });
+  const showBuy = !!s.showBuy;
   const p2p = {
-    side: SIDE_LABEL[s.p2pSide] || 'BÁN',
-    min: short(s.p2pMin),
     has: P.has && P.d.ads?.length > 0,
     stale: P.stale,
     error: P.has ? '' : shortErr(P.err),
-    ads: (P.d?.ads || []).map((a, i) => ({
-      rank: i + 1, name: a.name, price: vnd(a.price), limit: `${short(a.min)}–${short(a.max)}`,
-      orders: a.orders ?? '', rate: a.rate != null ? a.rate + '%' : '',
-    })),
+    ads: (P.d?.ads || []).map(adRow),
+    show_buy: showBuy,
+    buy: showBuy ? (P.d?.buy || []).map(adRow) : [],
+    buy_has: showBuy && (P.d?.buy || []).length > 0,
   };
   if (P.has && !p2p.ads.length) p2p.error = `Không có quảng cáo hạn mức > ${short(s.p2pMin)}`;
 
-  // Đối chiếu Bybit / OKX (dòng nhỏ): giá tốt nhất cùng chiều Mua/Bán, chênh lệch so với Binance
-  const sideKey = s.p2pSide === 'BUY' ? 'buy' : 'sell';
-  const binTop = P.d?.ads?.[0]?.price ?? null;
+  // Đối chiếu Bybit / OKX (dòng nhỏ): giá tốt nhất, chênh lệch so với Binance
+  const binSell = P.d?.ads?.[0]?.price ?? null, binBuy = P.d?.buy?.[0]?.price ?? null;
   p2p.cmp = [];
   for (const [k, name, on] of [['bybit', 'Bybit', s.showBybit !== false], ['okx', 'OKX', s.showOkx !== false]]) {
     if (!on) continue;
     const R = st(k);
-    const best = R.d?.[sideKey];
-    if (!best) { p2p.cmp.push({ name, price: '—', diff: '', note: R.has ? 'không có QC phù hợp' : shortErr(R.err) }); continue; }
-    const diff = binTop != null ? best.price - binTop : null;
-    p2p.cmp.push({ name, price: vnd(best.price), diff: diff == null ? '' : diff === 0 ? '=' : signed(diff), note: '' });
+    const one = (best, ref) => (best ? { price: vnd(best.price), diff: ref == null ? '' : best.price === ref ? '=' : signed(best.price - ref) } : { price: '—', diff: '' });
+    const sell = one(R.d?.sell, binSell);
+    const buy = showBuy ? one(R.d?.buy, binBuy) : null;
+    p2p.cmp.push({ name, sell, buy, note: R.d ? '' : shortErr(R.err) });
   }
   p2p.cmp_count = p2p.cmp.length;
 
-  // Biểu đồ 1 tuần giá Binance (chiều đang chọn)
-  p2p.chart = buildChart(all._hist || [], s.p2pSide === 'BUY' ? 2 : 1, now, s.showChart !== false);
+  // Biểu đồ giá Bán Binance: 24 giờ (trái) + 7 ngày (phải)
+  const hist = all._hist || [];
+  const on = s.showChart !== false;
+  p2p.chart_show = on;
+  p2p.c24 = buildChart(hist, 1, now, 86400000, 6 * 3600000, '24H');
+  p2p.c7 = buildChart(hist, 1, now, 7 * 86400000, 86400000, '7 NGÀY');
 
   // 2. USD chợ đen
   const B = st('black');
@@ -134,26 +136,25 @@ export function buildView(all, s, now = Date.now()) {
   };
 }
 
-// Biểu đồ đường SVG (viewBox 300×60) cho 7 ngày gần nhất
-function buildChart(hist, idx, now, on) {
-  const W = 300, H = 60, SPAN = 7 * 86400000;
-  const start = now - SPAN;
+// Biểu đồ đường SVG (viewBox 300×60) cho khoảng thời gian `span` gần nhất; vạch dọc mỗi `tick`
+function buildChart(hist, idx, now, span, tick, label) {
+  const W = 300, H = 60, pad = 4;
+  const start = now - span;
   const pts = hist.filter((p) => p[0] >= start && p[idx] != null).map((p) => [p[0], p[idx]]);
-  const days = hist.length ? Math.min(7, (now - hist[0][0]) / 86400000) : 0;
-  if (!on) return { show: false };
-  if (pts.length < 2) return { show: true, has: false, note: 'Đang thu thập dữ liệu biểu đồ (vẽ dần trong 7 ngày)' };
-  let min = Math.min(...pts.map((p) => p[1])), max = Math.max(...pts.map((p) => p[1]));
+  const have = hist.length ? now - hist[0][0] : 0;
+  if (pts.length < 2) return { has: false, label, note: 'đang thu thập dữ liệu' };
+  const lo = Math.min(...pts.map((p) => p[1])), hi = Math.max(...pts.map((p) => p[1]));
+  let min = lo, max = hi;
   if (max - min < 20) { const m = (max + min) / 2; min = m - 10; max = m + 10; }
-  const pad = 4;
-  const xy = pts.map(([t, v]) => `${((t - start) / SPAN * W).toFixed(1)},${(pad + (1 - (v - min) / (max - min)) * (H - 2 * pad)).toFixed(1)}`);
-  // nhãn ngày: vạch mỗi 24 giờ
+  const xy = pts.map(([t, v]) => `${((t - start) / span * W).toFixed(1)},${(pad + (1 - (v - min) / (max - min)) * (H - 2 * pad)).toFixed(1)}`);
   const ticks = [];
-  for (let d = 1; d < 7; d++) ticks.push((d / 7 * W).toFixed(1));
+  for (let t = tick; t < span; t += tick) ticks.push((t / span * W).toFixed(1));
   const first = pts[0][1], last = pts[pts.length - 1][1];
+  const partial = have < span * 0.97;
+  const unit = span > 86400000 ? `${Math.max(1, Math.round(have / 86400000))}/7 ngày` : `${Math.max(1, Math.round(have / 3600000))}/24 giờ`;
   return {
-    show: true, has: true, points: xy.join(' '), ticks,
-    max: vnd(Math.max(...pts.map((p) => p[1]))), min: vnd(Math.min(...pts.map((p) => p[1]))),
-    change: signed(last - first), partial: days < 6.9, days: Math.max(1, Math.round(days)),
+    has: true, label: partial ? unit : label, points: xy.join(' '), ticks,
+    hi: vnd(hi), lo: vnd(lo), change: last === first ? '±0' : signed(last - first), up: last >= first,
   };
 }
 
